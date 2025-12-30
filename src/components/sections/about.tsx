@@ -36,19 +36,19 @@ const AboutSection = () => {
                 <span className="text-primary">100%</span> Créativité
               </h2>
               <p className="mt-4 text-muted-foreground">
-                Le Hackathon 2026 n'est pas une compétition de plus. C'est un carrefour de talents brillants, un tremplin pour des idées révolutionnaires et une célébration du pouvoir de la technologie pour résoudre des problèmes réels. Que vous soyez développeur expérimenté ou designer créatif, c'est votre terrain de jeu.
+                Hackathon 2026 is not just another competition. It's a melting pot of brilliant minds, a launchpad for groundbreaking ideas, and a celebration of technology's power to solve real-world problems. Whether you're a seasoned developer or a design prodigy, this is your arena.
               </p>
               <ul className="mt-6 space-y-4">
                 <li className="flex items-start gap-3">
                   <CheckCircle className="w-6 h-6 text-accent mt-1 shrink-0" />
                   <span>
-                    <strong>Application Web ou Mobile&nbsp;:</strong> Choisissez votre plateforme, libérez votre créativité et construisez une application entièrement fonctionnelle à partir de zéro.
+                    <strong>Application Web ou Mobile:</strong> Choose your platform, unleash your creativity, and build a fully functional application from scratch.
                   </span>
                 </li>
                 <li className="flex items-start gap-3">
                   <CheckCircle className="w-6 h-6 text-accent mt-1 shrink-0" />
                   <span>
-                    <strong>Un Défi, Une Idée, Une Solution&nbsp;:</strong> Relevez des défis passionnants, imaginez des solutions innovantes et donnez vie à votre vision avec le soutien de mentors du secteur.
+                    <strong>Un Défi, Une Idée, Une Solution:</strong> Tackle exciting challenges, brainstorm innovative solutions, and bring your vision to life with the support of industry mentors.
                   </span>
                 </li>
               </ul>

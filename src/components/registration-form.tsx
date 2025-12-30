@@ -25,22 +25,26 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter }
 import { useToast } from "@/hooks/use-toast";
 import { Loader2 } from "lucide-react";
 import { useState } from "react";
+import { useInscriptions } from "@/context/inscriptions-context";
 
 const formSchema = z.object({
   fullName: z.string().min(2, {
-    message: "Full name must be at least 2 characters.",
+    message: "Le nom complet doit contenir au moins 2 caractères.",
   }),
   email: z.string().email({
-    message: "Please enter a valid email address.",
+    message: "Veuillez saisir une adresse e-mail valide.",
   }),
   classe: z.string({
-    required_error: "Please select a class.",
+    required_error: "Veuillez sélectionner une classe.",
   }),
 });
+
+export type Inscription = z.infer<typeof formSchema> & { date: string };
 
 export default function RegistrationForm() {
     const [isLoading, setIsLoading] = useState(false);
     const { toast } = useToast();
+    const { addInscription } = useInscriptions();
     
     const form = useForm<z.infer<typeof formSchema>>({
         resolver: zodResolver(formSchema),
@@ -56,20 +60,26 @@ export default function RegistrationForm() {
 
         // Simulate API call
         setTimeout(() => {
+            const newInscription: Inscription = {
+                ...values,
+                date: new Date().toISOString(),
+            };
+            addInscription(newInscription);
+            
             setIsLoading(false);
             toast({
-                title: "Registration Successful! 🎉",
-                description: "We've received your registration. Check your email for more details.",
+                title: "Inscription réussie ! 🎉",
+                description: "Nous avons bien reçu ton inscription. Vérifie ta boîte mail pour plus de détails.",
             });
             form.reset();
-        }, 2000);
+        }, 1000);
     }
 
   return (
     <Card className="border-primary/50 border-2 shadow-xl shadow-primary/10">
         <CardHeader>
-            <CardTitle className="font-headline text-2xl">Register for Hackathon 2026</CardTitle>
-            <CardDescription>Fill out the form below to join the event.</CardDescription>
+            <CardTitle className="font-headline text-2xl">Inscription au Hackathon 2026</CardTitle>
+            <CardDescription>Remplis le formulaire ci-dessous pour participer à l'événement.</CardDescription>
         </CardHeader>
         <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)}>
@@ -79,9 +89,9 @@ export default function RegistrationForm() {
                         name="fullName"
                         render={({ field }) => (
                             <FormItem>
-                            <FormLabel>Full Name</FormLabel>
+                            <FormLabel>Nom complet</FormLabel>
                             <FormControl>
-                                <Input placeholder="CFI-CIRAS" {...field} />
+                                <Input placeholder="Jean Dupont" {...field} />
                             </FormControl>
                             <FormMessage />
                             </FormItem>
@@ -94,7 +104,7 @@ export default function RegistrationForm() {
                             <FormItem>
                             <FormLabel>Email</FormLabel>
                             <FormControl>
-                                <Input type="email" placeholder="cfi-ciras@gmail.com" {...field} />
+                                <Input type="email" placeholder="jean.dupont@exemple.com" {...field} />
                             </FormControl>
                             <FormMessage />
                             </FormItem>
@@ -109,7 +119,7 @@ export default function RegistrationForm() {
                                 <Select onValueChange={field.onChange} defaultValue={field.value}>
                                     <FormControl>
                                     <SelectTrigger>
-                                        <SelectValue placeholder="Selectionner votre classe" />
+                                        <SelectValue placeholder="Sélectionne ta classe" />
                                     </SelectTrigger>
                                     </FormControl>
                                     <SelectContent>
@@ -132,7 +142,7 @@ export default function RegistrationForm() {
                 <CardFooter>
                     <Button type="submit" className="w-full" disabled={isLoading}>
                         {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                        {isLoading ? "Submitting..." : "Submit Registration"}
+                        {isLoading ? "Envoi en cours..." : "Envoyer l'inscription"}
                     </Button>
                 </CardFooter>
             </form>

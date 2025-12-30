@@ -14,16 +14,15 @@ const Footer = () => {
             <div>
               <h4 className="font-semibold text-sm text-foreground">Navigation</h4>
               <ul className="mt-4 space-y-2">
-                <li><Link href="#about" className="text-sm text-muted-foreground hover:text-primary transition-colors">À propos</Link></li>
-                <li><Link href="#challenges" className="text-sm text-muted-foreground hover:text-primary transition-colors">Défis</Link></li>
-                <li><Link href="#prizes" className="text-sm text-muted-foreground hover:text-primary transition-colors">Récompenses</Link></li>
+                <li><Link href="/#about" className="text-sm text-muted-foreground hover:text-primary transition-colors">À propos</Link></li>
+                <li><Link href="/#prizes" className="text-sm text-muted-foreground hover:text-primary transition-colors">Récompenses</Link></li>
+                <li><Link href="/admin/dashboard" className="text-sm text-muted-foreground hover:text-primary transition-colors">Admin</Link></li>
               </ul>
             </div>
             <div>
               <h4 className="font-semibold text-sm text-foreground">Ressources</h4>
               <ul className="mt-4 space-y-2">
-                <li><Link href="#faq" className="text-sm text-muted-foreground hover:text-primary transition-colors">FAQ</Link></li>
-                <li><Link href="#" className="text-sm text-muted-foreground hover:text-primary transition-colors">Règles</Link></li>
+                <li><Link href="#" className="text-sm text-muted-foreground hover:text-primary transition-colors">Règlement</Link></li>
                 <li><Link href="#" className="text-sm text-muted-foreground hover:text-primary transition-colors">Contact</Link></li>
               </ul>
             </div>

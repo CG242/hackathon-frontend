@@ -12,24 +12,29 @@ const BackgroundParticles = () => {
     if (!ctx) return;
 
     let animationFrameId: number;
-    let particles: { x: number; y: number; size: number; speedX: number; speedY: number }[] = [];
-    const particleCount = 150;
+    let particles: { x: number; y: number; size: number; baseSize: number; speedX: number; speedY: number; angle: number }[] = [];
+    const particleCount = 200;
 
     const resizeCanvas = () => {
       canvas.width = window.innerWidth;
-      canvas.height = document.body.scrollHeight > window.innerHeight ? document.body.scrollHeight : window.innerHeight;
+      const bodyHeight = document.body.scrollHeight;
+      const windowHeight = window.innerHeight;
+      canvas.height = bodyHeight > windowHeight ? bodyHeight : windowHeight;
       initParticles();
     };
 
     const initParticles = () => {
       particles = [];
       for (let i = 0; i < particleCount; i++) {
+        const size = Math.random() * 3 + 1;
         particles.push({
           x: Math.random() * canvas.width,
           y: Math.random() * canvas.height,
-          size: Math.random() * 2.5 + 1,
-          speedX: Math.random() * 0.6 - 0.3,
-          speedY: Math.random() * 0.6 - 0.3,
+          size: size,
+          baseSize: size,
+          speedX: Math.random() * 0.8 - 0.4,
+          speedY: Math.random() * 0.8 - 0.4,
+          angle: Math.random() * Math.PI * 2,
         });
       }
     };
@@ -40,9 +45,14 @@ const BackgroundParticles = () => {
       particles.forEach(p => {
         p.x += p.speedX;
         p.y += p.speedY;
+        p.angle += 0.02;
+        p.size = p.baseSize + Math.sin(p.angle) * 0.5;
 
-        if (p.x > canvas.width + p.size || p.x < -p.size) p.x = Math.random() * canvas.width;
-        if (p.y > canvas.height + p.size || p.y < -p.size) p.y = Math.random() * canvas.height;
+
+        if (p.x < -p.size) p.x = canvas.width + p.size;
+        if (p.x > canvas.width + p.size) p.x = -p.size;
+        if (p.y < -p.size) p.y = canvas.height + p.size;
+        if (p.y > canvas.height + p.size) p.y = -p.size;
 
         ctx.shadowColor = 'hsla(195, 100%, 70%, 1)';
         ctx.shadowBlur = 10;
@@ -52,9 +62,7 @@ const BackgroundParticles = () => {
         ctx.fill();
       });
 
-      // Reset shadow for connecting lines
       ctx.shadowBlur = 0;
-
       connectParticles();
       animationFrameId = requestAnimationFrame(animate);
     };
@@ -63,14 +71,14 @@ const BackgroundParticles = () => {
       if(!ctx) return;
       let opacityValue = 1;
       for (let a = 0; a < particles.length; a++) {
-        for (let b = a; b < particles.length; b++) {
+        for (let b = a + 1; b < particles.length; b++) {
           const distance = Math.sqrt(
             Math.pow(particles[a].x - particles[b].x, 2) + Math.pow(particles[a].y - particles[b].y, 2)
           );
-          if (distance < 110) {
-            opacityValue = 1 - distance / 110;
+          if (distance < 120) {
+            opacityValue = 1 - (distance / 120);
             ctx.strokeStyle = `hsla(26, 100%, 70%, ${opacityValue})`;
-            ctx.lineWidth = 0.8;
+            ctx.lineWidth = 1;
             ctx.beginPath();
             ctx.moveTo(particles[a].x, particles[a].y);
             ctx.lineTo(particles[b].x, particles[b].y);
@@ -84,8 +92,23 @@ const BackgroundParticles = () => {
     resizeCanvas();
     animate();
 
+    const observer = new MutationObserver((mutations) => {
+        for(let mutation of mutations) {
+            if (mutation.type === 'childList' || mutation.type === 'attributes') {
+                const newHeight = document.body.scrollHeight;
+                if (canvas.height !== newHeight) {
+                    resizeCanvas();
+                }
+                break;
+            }
+        }
+    });
+
+    observer.observe(document.body, { attributes: true, childList: true, subtree: true });
+
     return () => {
       window.removeEventListener('resize', resizeCanvas);
+      observer.disconnect();
       cancelAnimationFrame(animationFrameId);
     };
   }, []);
