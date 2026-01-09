@@ -1,16 +1,34 @@
+'use client';
+
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import Countdown from "@/components/countdown";
 import BackgroundParticles from "@/components/background-particles";
+import { useEvent } from "@/context/event-context";
+import { useEffect, useState } from "react";
 
 const HeroSection = () => {
+  const { eventSettings } = useEvent();
+  const [year, setYear] = useState(new Date().getFullYear());
+  const [isClient, setIsClient] = useState(false);
+
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
+
+  useEffect(() => {
+    if (isClient && eventSettings.eventDate) {
+        setYear(new Date(eventSettings.eventDate).getFullYear());
+    }
+  }, [isClient, eventSettings.eventDate]);
+
   return (
     <section id="hero" className="relative flex items-center justify-center min-h-screen overflow-hidden pt-20">
       <BackgroundParticles />
       <div className="relative z-10 text-center px-4">
         <h1 className="font-headline text-5xl md:text-7xl lg:text-8xl font-bold tracking-tighter text-transparent bg-clip-text bg-gradient-to-br from-white to-gray-400 animate-fade-in-up">
           <span className="text-primary">&lt;/</span>HACKATHON
-          <span className="text-primary">&gt;</span> <span className="text-accent">2026</span>
+          <span className="text-primary">&gt;</span> <span className="text-accent">{isClient ? year : '...'}</span>
         </h1>
         <p className="mt-4 max-w-2xl mx-auto text-lg md:text-xl text-muted-foreground animate-fade-in-up animation-delay-300">
           Rejoignez les esprits les plus innovants pour construire l'avenir de la technologie.

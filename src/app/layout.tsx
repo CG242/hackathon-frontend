@@ -10,8 +10,8 @@ import { ProjectsProvider } from '@/context/projects-context';
 import { WinnersProvider } from '@/context/winners-context';
 
 export const metadata: Metadata = {
-  title: 'Hackathon 2026 | CFI-CIRAS',
-  description: 'Le site immersif et premium du Hackathon 2026 par CFI-CIRAS.',
+  title: 'Hackathon CFI-CIRAS',
+  description: 'Le site immersif et premium du Hackathon CFI-CIRAS.',
 };
 
 export default function RootLayout({

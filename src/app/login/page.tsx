@@ -43,13 +43,13 @@ export default function LoginPage() {
     };
 
     return (
-        <div className="relative flex items-center justify-center min-h-screen bg-transparent">
+        <div className="relative flex items-center justify-center min-h-screen bg-transparent p-4">
             <AdminBackground />
             <Card data-login-card className="w-full max-w-sm z-10 border-primary/50 border-2 shadow-xl shadow-primary/10 bg-card/80 backdrop-blur-sm">
                 <CardHeader className="text-center">
                     <div className="flex justify-center items-center gap-2 mb-4">
                         <CodeXml className="w-10 h-10 text-primary" />
-                        <h1 className="text-2xl font-bold font-headline">CFI-CIRAS</h1>
+                        <h1 className="text-xl sm:text-2xl font-bold font-headline">CFI-CIRAS</h1>
                     </div>
                     <CardTitle className="font-headline text-2xl">Connexion Admin</CardTitle>
                     <CardDescription>Accédez à votre tableau de bord</CardDescription>

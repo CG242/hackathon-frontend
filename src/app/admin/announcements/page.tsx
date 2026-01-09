@@ -7,11 +7,15 @@ import { Textarea } from "@/components/ui/textarea";
 import { useState } from "react";
 import { Megaphone, PlusCircle } from "lucide-react";
 import { useAnnouncements, type Announcement } from "@/context/announcements-context";
+import { Label } from "@/components/ui/label";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Badge } from "@/components/ui/badge";
 
 export default function AnnouncementsPage() {
     const { announcements, addAnnouncement } = useAnnouncements();
     const [newTitle, setNewTitle] = useState("");
     const [newContent, setNewContent] = useState("");
+    const [newScope, setNewScope] = useState<"public" | "private">("public");
 
     const handleAddAnnouncement = () => {
         if (!newTitle || !newContent) return;
@@ -20,10 +24,12 @@ export default function AnnouncementsPage() {
             title: newTitle,
             content: newContent,
             date: new Date().toISOString().split('T')[0],
+            scope: newScope,
         };
         addAnnouncement(newAnnouncement);
         setNewTitle("");
         setNewContent("");
+        setNewScope("public");
     }
 
     return (
@@ -52,6 +58,19 @@ export default function AnnouncementsPage() {
                                 onChange={(e) => setNewContent(e.target.value)}
                                 rows={5}
                             />
+                             <div className="space-y-2">
+                                <Label>Visibilité</Label>
+                                <RadioGroup defaultValue="public" value={newScope} onValueChange={(value: "public" | "private") => setNewScope(value)} className="flex gap-4">
+                                    <div className="flex items-center space-x-2">
+                                        <RadioGroupItem value="public" id="r1" />
+                                        <Label htmlFor="r1">Publique</Label>
+                                    </div>
+                                    <div className="flex items-center space-x-2">
+                                        <RadioGroupItem value="private" id="r2" />
+                                        <Label htmlFor="r2">Privée (Admin)</Label>
+                                    </div>
+                                </RadioGroup>
+                            </div>
                             <Button onClick={handleAddAnnouncement} className="w-full">
                                 Publier l'annonce
                             </Button>
@@ -63,7 +82,10 @@ export default function AnnouncementsPage() {
                         {[...announcements].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()).map(announcement => (
                              <Card key={announcement.id}>
                                 <CardHeader>
-                                    <CardTitle className="text-lg">{announcement.title}</CardTitle>
+                                    <div className="flex justify-between items-start">
+                                        <CardTitle className="text-lg">{announcement.title}</CardTitle>
+                                        {announcement.scope === 'private' && <Badge variant="secondary">Privée</Badge>}
+                                    </div>
                                     <CardDescription>{new Date(announcement.date).toLocaleDateString()}</CardDescription>
                                 </CardHeader>
                                 <CardContent>

@@ -7,6 +7,7 @@ export type Announcement = {
     title: string;
     content: string;
     date: string;
+    scope: 'public' | 'private';
 }
 
 interface AnnouncementsContextType {
@@ -22,12 +23,21 @@ const initialAnnouncements: Announcement[] = [
         title: "Bienvenue au Hackathon 2026!",
         content: "Nous sommes ravis de vous accueillir. Que le meilleur gagne !",
         date: "2026-01-01",
+        scope: "public",
     },
     {
         id: 2,
         title: "Rappel : Cérémonie d'ouverture",
         content: "N'oubliez pas la cérémonie d'ouverture à 9h précises dans l'amphithéâtre principal.",
         date: "2026-01-01",
+        scope: "public",
+    },
+    {
+        id: 3,
+        title: "Briefing des mentors (Privé)",
+        content: "Rendez-vous à 8h30 pour le briefing des mentors dans la salle 101.",
+        date: "2026-01-01",
+        scope: "private",
     }
 ];
 

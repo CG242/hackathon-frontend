@@ -7,7 +7,7 @@ const Footer = () => {
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <div className="grid md:grid-cols-3 gap-8">
           <div>
-            <h3 className="font-headline text-lg font-bold">Hackathon 2026</h3>
+            <h3 className="font-headline text-lg font-bold">Hackathon CFI-CIRAS</h3>
             <p className="mt-2 text-sm text-muted-foreground">Innover. Créer. Collaborer.</p>
           </div>
           <div className="md:col-span-2 grid grid-cols-2 sm:grid-cols-3 gap-8">
@@ -16,6 +16,7 @@ const Footer = () => {
               <ul className="mt-4 space-y-2">
                 <li><Link href="/#about" className="text-sm text-muted-foreground hover:text-primary transition-colors">À Propos</Link></li>
                 <li><Link href="/#prizes" className="text-sm text-muted-foreground hover:text-primary transition-colors">Prix</Link></li>
+                <li><Link href="/#announcements" className="text-sm text-muted-foreground hover:text-primary transition-colors">Annonces</Link></li>
                 <li><Link href="/admin/dashboard" className="text-sm text-muted-foreground hover:text-primary transition-colors">Admin</Link></li>
               </ul>
             </div>

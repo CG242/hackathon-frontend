@@ -26,6 +26,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Loader2 } from "lucide-react";
 import { useState } from "react";
 import { useInscriptions } from "@/context/inscriptions-context";
+import type { Inscription } from "@/context/inscriptions-context";
 
 const formSchema = z.object({
   fullName: z.string().min(2, {
@@ -39,7 +40,6 @@ const formSchema = z.object({
   }),
 });
 
-export type Inscription = z.infer<typeof formSchema> & { date: string };
 
 export default function RegistrationForm() {
     const [isLoading, setIsLoading] = useState(false);
@@ -49,8 +49,8 @@ export default function RegistrationForm() {
     const form = useForm<z.infer<typeof formSchema>>({
         resolver: zodResolver(formSchema),
         defaultValues: {
-            fullName: "",
-            email: "",
+            fullName: "CFI-CIRAS",
+            email: "cfi-ciras@example.com",
         },
     });
 
@@ -59,18 +59,14 @@ export default function RegistrationForm() {
         
         // Simulate API call
         setTimeout(() => {
-            const newInscription: Inscription = {
-                ...values,
-                date: new Date().toISOString(),
-            };
-            addInscription(newInscription);
+            addInscription(values);
             
             setIsLoading(false);
             toast({
                 title: "Inscription réussie ! 🎉",
                 description: "Nous avons bien reçu votre inscription. Consultez votre e-mail pour plus de détails.",
             });
-            form.reset();
+            form.reset({fullName: "CFI-CIRAS", email: "cfi-ciras@example.com", classe: undefined});
         }, 1000);
     }
 
@@ -115,7 +111,7 @@ export default function RegistrationForm() {
                         render={({ field }) => (
                             <FormItem>
                                 <FormLabel>Classe</FormLabel>
-                                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                <Select onValueChange={field.onChange} defaultValue={field.value} value={field.value}>
                                     <FormControl>
                                     <SelectTrigger>
                                         <SelectValue placeholder="Sélectionnez votre classe" />

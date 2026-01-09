@@ -112,16 +112,3 @@
     animation-delay: 900ms;
   }
 }
-
-::-webkit-scrollbar {
-  display: none;
-}
-
-html {
-  scrollbar-width: none;
-}
-
-
-body {
-  -ms-overflow-style: none;
-}

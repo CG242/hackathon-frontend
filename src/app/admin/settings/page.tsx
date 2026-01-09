@@ -8,7 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth, type AdminUser } from "@/context/auth-context";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
-import { UserPlus, Users, Trash2 } from "lucide-react";
+import { UserPlus, Users, Trash2, Trophy } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { useEvent } from "@/context/event-context";
 import {
@@ -139,23 +139,29 @@ function UsersList() {
 export default function SettingsPage() {
     const { eventSettings, setEventSettings } = useEvent();
     const { toast } = useToast();
-    
-    // Local state to manage form inputs
-    const [eventName, setEventName] = useState(eventSettings.eventName);
-    const [eventDate, setEventDate] = useState(eventSettings.eventDate);
-    const [registrationsOpen, setRegistrationsOpen] = useState(eventSettings.registrationsOpen);
-    const [registrationGoal, setRegistrationGoal] = useState(eventSettings.registrationGoal);
 
+    const handleSettingChange = <K extends keyof typeof eventSettings>(key: K, value: (typeof eventSettings)[K]) => {
+        setEventSettings(prevSettings => ({
+            ...prevSettings,
+            [key]: value
+        }));
+    };
+
+    const handlePrizeChange = (prize: keyof typeof eventSettings.prizes, value: string) => {
+        setEventSettings(prevSettings => ({
+            ...prevSettings,
+            prizes: {
+                ...prevSettings.prizes,
+                [prize]: value
+            }
+        }));
+    };
+    
     const handleSaveChanges = () => {
-        setEventSettings({
-            eventName,
-            eventDate,
-            registrationsOpen,
-            registrationGoal,
-        });
+        // This function is now just for user feedback, as changes are saved live.
         toast({
-            title: "Paramètres enregistrés !",
-            description: "Les modifications ont été sauvegardées.",
+            title: "Modifications enregistrées !",
+            description: "Les paramètres sont sauvegardés au fur et à mesure.",
         });
     };
 
@@ -171,9 +177,10 @@ export default function SettingsPage() {
                     </div>
                     
                     <Tabs defaultValue="event">
-                        <TabsList className="grid w-full max-w-md grid-cols-4">
+                        <TabsList className="grid w-full max-w-lg grid-cols-2 sm:grid-cols-5">
                             <TabsTrigger value="general">Général</TabsTrigger>
                             <TabsTrigger value="event">Événement</TabsTrigger>
+                            <TabsTrigger value="prizes">Prix</TabsTrigger>
                             <TabsTrigger value="users">Utilisateurs</TabsTrigger>
                             <TabsTrigger value="appearance">Apparence</TabsTrigger>
                         </TabsList>
@@ -187,7 +194,7 @@ export default function SettingsPage() {
                                 <CardContent className="space-y-6">
                                     <div className="space-y-2">
                                         <Label htmlFor="appName">Nom de l'application</Label>
-                                        <Input id="appName" defaultValue="Hackathon 2026 | CFI-CIRAS" />
+                                        <Input id="appName" defaultValue="Hackathon CFI-CIRAS" />
                                     </div>
                                     <div className="flex items-center justify-between rounded-lg border p-4">
                                          <div className="space-y-0.5">
@@ -211,15 +218,15 @@ export default function SettingsPage() {
                                 <CardContent className="space-y-6">
                                    <div className="space-y-2">
                                         <Label htmlFor="eventName">Nom de l'événement</Label>
-                                        <Input id="eventName" value={eventName} onChange={(e) => setEventName(e.target.value)} />
+                                        <Input id="eventName" value={eventSettings.eventName} onChange={(e) => handleSettingChange('eventName', e.target.value)} />
                                     </div>
                                     <div className="space-y-2">
                                         <Label htmlFor="eventDate">Date de début</Label>
-                                        <Input id="eventDate" type="datetime-local" value={eventDate} onChange={(e) => setEventDate(e.target.value)} />
+                                        <Input id="eventDate" type="datetime-local" value={eventSettings.eventDate} onChange={(e) => handleSettingChange('eventDate', e.target.value)} />
                                     </div>
                                     <div className="space-y-2">
                                         <Label htmlFor="registrationGoal">Objectif d'inscriptions</Label>
-                                        <Input id="registrationGoal" type="number" value={registrationGoal} onChange={(e) => setRegistrationGoal(parseInt(e.target.value, 10))} />
+                                        <Input id="registrationGoal" type="number" value={eventSettings.registrationGoal} onChange={(e) => handleSettingChange('registrationGoal', parseInt(e.target.value, 10))} />
                                     </div>
                                      <div className="flex items-center justify-between rounded-lg border p-4">
                                          <div className="space-y-0.5">
@@ -228,7 +235,30 @@ export default function SettingsPage() {
                                               Permettre aux participants de s'inscrire via le formulaire.
                                             </p>
                                         </div>
-                                        <Switch checked={registrationsOpen} onCheckedChange={setRegistrationsOpen} />
+                                        <Switch checked={eventSettings.registrationsOpen} onCheckedChange={(checked) => handleSettingChange('registrationsOpen', checked)} />
+                                    </div>
+                                </CardContent>
+                            </Card>
+                        </TabsContent>
+
+                        <TabsContent value="prizes">
+                            <Card>
+                                <CardHeader>
+                                    <CardTitle>Prix du Hackathon</CardTitle>
+                                    <CardDescription>Modifiez les montants des récompenses pour les gagnants.</CardDescription>
+                                </CardHeader>
+                                <CardContent className="space-y-6">
+                                    <div className="space-y-2">
+                                        <Label htmlFor="firstPrize" className="flex items-center gap-2"><Trophy className="text-yellow-400"/> 1ère Place</Label>
+                                        <Input id="firstPrize" value={eventSettings.prizes.first} onChange={(e) => handlePrizeChange('first', e.target.value)} />
+                                    </div>
+                                     <div className="space-y-2">
+                                        <Label htmlFor="secondPrize" className="flex items-center gap-2"><Trophy className="text-slate-300"/> 2ème Place</Label>
+                                        <Input id="secondPrize" value={eventSettings.prizes.second} onChange={(e) => handlePrizeChange('second', e.target.value)} />
+                                    </div>
+                                     <div className="space-y-2">
+                                        <Label htmlFor="thirdPrize" className="flex items-center gap-2"><Trophy className="text-yellow-600"/> 3ème Place</Label>
+                                        <Input id="thirdPrize" value={eventSettings.prizes.third} onChange={(e) => handlePrizeChange('third', e.target.value)} />
                                     </div>
                                 </CardContent>
                             </Card>
