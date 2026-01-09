@@ -1,30 +1,9 @@
+'use client';
+
 import { Trophy } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
-
-const prizesData = [
-  {
-    place: "2ème Place",
-    amount: "100 000 FCFA",
-    color: "text-slate-300",
-    order: "md:order-1",
-    elevation: "md:mt-8"
-  },
-  {
-    place: "1ère Place",
-    amount: "150 000 FCFA",
-    color: "text-yellow-400",
-    order: "md:order-2",
-    elevation: "md:-translate-y-8 scale-110"
-  },
-  {
-    place: "3ème Place",
-    amount: "50 000 FCFA",
-    color: "text-yellow-600",
-    order: "md:order-3",
-    elevation: "md:mt-8"
-  },
-];
+import { useEvent } from "@/context/event-context";
 
 const PrizeCard = ({ place, amount, color, elevation }: {place: string, amount: string, color: string, elevation: string}) => (
   <Card className={cn(
@@ -45,6 +24,32 @@ const PrizeCard = ({ place, amount, color, elevation }: {place: string, amount: 
 );
 
 const PrizesSection = () => {
+    const { eventSettings } = useEvent();
+
+    const prizesData = [
+      {
+        place: "2ème Place",
+        amount: eventSettings.prizes.second,
+        color: "text-slate-300",
+        order: "md:order-1",
+        elevation: "md:mt-8"
+      },
+      {
+        place: "1ère Place",
+        amount: eventSettings.prizes.first,
+        color: "text-yellow-400",
+        order: "md:order-2",
+        elevation: "md:-translate-y-8 scale-110"
+      },
+      {
+        place: "3ème Place",
+        amount: eventSettings.prizes.third,
+        color: "text-yellow-600",
+        order: "md:order-3",
+        elevation: "md:mt-8"
+      },
+    ];
+
   return (
     <section id="prizes" className="py-20 md:py-32">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">

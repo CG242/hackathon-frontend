@@ -9,10 +9,12 @@ import {
   SheetContent,
   SheetTrigger,
 } from "@/components/ui/sheet"
+import { useEvent } from "@/context/event-context";
 
 const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isClient, setIsClient] = useState(false);
+  const { eventSettings } = useEvent();
 
   useEffect(() => {
     setIsClient(true);
@@ -21,6 +23,7 @@ const Header = () => {
   const navLinks = [
     { href: "/#about", label: "À Propos" },
     { href: "/#prizes", label: "Prix" },
+    { href: "/#announcements", label: "Annonces" },
     { href: "/results", label: "Résultats" },
   ];
 
@@ -30,7 +33,7 @@ const Header = () => {
         <div className="flex items-center justify-between h-20">
           <Link href="/" className="flex items-center gap-2 text-2xl font-bold font-headline">
             <CodeXml className="w-8 h-8 text-primary" />
-            <span>CFI-CIRAS</span>
+            <span>{isClient ? eventSettings.eventName.split(' ')[0] : 'CFI-CIRAS'}</span>
           </Link>
           <nav className="hidden md:flex items-center space-x-6">
             {navLinks.map((link) => (
@@ -58,7 +61,7 @@ const Header = () => {
                   <div className="flex justify-between items-center border-b pb-4">
                     <Link href="/" className="flex items-center gap-2 text-xl font-bold font-headline" onClick={() => setIsMenuOpen(false)}>
                       <CodeXml className="w-7 h-7 text-primary" />
-                      <span>CFI-CIRAS</span>
+                      <span>{eventSettings.eventName.split(' ')[0]}</span>
                     </Link>
                     <Button variant="ghost" size="icon" onClick={() => setIsMenuOpen(false)}>
                       <X className="h-6 w-6" />

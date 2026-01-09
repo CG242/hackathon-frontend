@@ -77,23 +77,9 @@ const WinnerCard = ({
 };
 
 export default function ResultsPage() {
-  const { winners, areResultsPublished, preselected, arePreselectionsPublished, loading } = useWinners();
+  const { winners, areResultsPublished, preselected, arePreselectionsPublished } = useWinners();
   const { projects } = useProjects();
   const { inscriptions } = useInscriptions();
-
-  if (loading) {
-    return (
-      <div className="flex flex-col min-h-screen">
-        <Header />
-        <main className="flex-grow pt-20 flex items-center justify-center">
-          <div className="text-center">
-            <p className="text-muted-foreground">Chargement des résultats...</p>
-          </div>
-        </main>
-        <Footer />
-      </div>
-    );
-  }
 
   const getProjectByName = (name: string) => projects.find((p) => p.name === name);
 
@@ -103,10 +89,7 @@ export default function ResultsPage() {
     third: getProjectByName(winners.third),
   };
 
-  const preselectedParticipants = inscriptions.filter(i => {
-    const email = i.user?.email || '';
-    return preselected.includes(email);
-  });
+  const preselectedParticipants = inscriptions.filter(i => preselected.includes(i.email));
 
   const areAnyResultsPublished = areResultsPublished || arePreselectionsPublished;
   const arePodiumResultsPublished = areResultsPublished && (winnerProjectsData.first || winnerProjectsData.second || winnerProjectsData.third) && (winners.first !== 'none' || winners.second !== 'none' || winners.third !== 'none');
@@ -181,15 +164,12 @@ export default function ResultsPage() {
                   </CardHeader>
                   <CardContent>
                     <ul className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-                      {preselectedParticipants.map((participant, index) => {
-                        const fullName = participant.user ? `${participant.user.prenom} ${participant.user.nom}` : 'Utilisateur inconnu';
-                        return (
-                          <li key={participant.id || index} className="flex items-center gap-3 bg-background/50 p-3 rounded-md">
-                             <CheckCircle className="w-5 h-5 text-green-500 shrink-0" />
-                             <span className="font-medium">{fullName}</span>
-                          </li>
-                        );
-                      })}
+                      {preselectedParticipants.map((participant, index) => (
+                        <li key={`${participant.email}-${index}`} className="flex items-center gap-3 bg-background/50 p-3 rounded-md">
+                           <CheckCircle className="w-5 h-5 text-green-500 shrink-0" />
+                           <span className="font-medium">{participant.fullName}</span>
+                        </li>
+                      ))}
                     </ul>
                   </CardContent>
                 </Card>

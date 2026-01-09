@@ -3,87 +3,76 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
 import { Loader2 } from 'lucide-react';
-import { authApi, User, LoginResponse } from '@/lib/api';
 
-type AuthUser = {
-    id: string;
+type User = {
     email: string;
-    role: 'USER' | 'ADMIN';
-    nom?: string;
-    prenom?: string;
-    access_token?: string;
+    role: 'admin';
 };
 
+export type AdminUser = User & { password?: string };
+
 interface AuthContextType {
-    user: AuthUser | null;
+    user: User | null;
+    users: AdminUser[];
     loading: boolean;
-    login: (email: string, password: string) => Promise<boolean>;
+    login: (email: string, pass: string) => boolean;
     logout: () => void;
-    refreshUser: () => Promise<void>;
+    addUser: (user: AdminUser) => void;
+    removeUser: (email: string) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+const initialUsers: AdminUser[] = [
+    { email: 'cfi-ciras@example.com', password: 'password', role: 'admin' },
+];
+
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
-    const [user, setUser] = useState<AuthUser | null>(null);
+    const [user, setUser] = useState<User | null>(null);
+    const [users, setUsers] = useState<AdminUser[]>([]);
     const [loading, setLoading] = useState(true);
     const router = useRouter();
 
     useEffect(() => {
-        // Vérifier si l'utilisateur est déjà connecté
-        const loadUser = async () => {
-            try {
-                const storedUser = localStorage.getItem('user');
-                if (storedUser) {
-                    const parsedUser = JSON.parse(storedUser);
-                    // Vérifier si le token est toujours valide en récupérant le profil
-                    try {
-                        const profile = await authApi.getProfile();
-                        setUser({
-                            ...profile,
-                            access_token: parsedUser.access_token,
-                        });
-                    } catch (error) {
-                        // Token invalide, déconnexion
-                        localStorage.removeItem('user');
-                        setUser(null);
-                    }
-                }
-            } catch (error) {
-                localStorage.removeItem('user');
-                setUser(null);
-            } finally {
-                setLoading(false);
+        try {
+            const storedUser = localStorage.getItem('user');
+            if (storedUser) {
+                setUser(JSON.parse(storedUser));
             }
-        };
-
-        loadUser();
+            
+            const storedUsers = localStorage.getItem('admin_users');
+            if (storedUsers) {
+                const parsedUsers = JSON.parse(storedUsers);
+                 // Ensure initial user exists if storage is manipulated or empty
+                if (!parsedUsers.some((u: AdminUser) => u.email === initialUsers[0].email)) {
+                    const updatedUsers = [...parsedUsers, ...initialUsers];
+                    localStorage.setItem('admin_users', JSON.stringify(updatedUsers));
+                    setUsers(updatedUsers);
+                } else {
+                    setUsers(parsedUsers);
+                }
+            } else {
+                localStorage.setItem('admin_users', JSON.stringify(initialUsers));
+                setUsers(initialUsers);
+            }
+        } catch (error) {
+            // Silently fail if localStorage is not available or parsing fails
+            localStorage.setItem('admin_users', JSON.stringify(initialUsers));
+            setUsers(initialUsers);
+            localStorage.removeItem('user');
+        }
+        setLoading(false);
     }, []);
 
-    const login = async (email: string, password: string): Promise<boolean> => {
-        try {
-            const response: LoginResponse = await authApi.login({ email, password });
-            
-            const userData: AuthUser = {
-                ...response.user,
-                access_token: response.access_token,
-            };
-            
+    const login = (email: string, pass: string): boolean => {
+        const foundUser = users.find(u => u.email === email && u.password === pass);
+        if (foundUser) {
+            const userData: User = { email: foundUser.email, role: 'admin' };
             localStorage.setItem('user', JSON.stringify(userData));
             setUser(userData);
             return true;
-        } catch (error: any) {
-            // Améliorer la gestion d'erreur pour afficher plus d'informations
-            const errorMessage = error?.message || error?.error || error?.toString() || 'Erreur inconnue';
-            const errorDetails = error?.response?.data || error?.data || {};
-            console.error('Erreur de connexion:', {
-                message: errorMessage,
-                details: errorDetails,
-                status: error?.status || error?.statusCode,
-                fullError: error
-            });
-            return false;
         }
+        return false;
     };
 
     const logout = () => {
@@ -92,24 +81,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         router.push('/login');
     };
 
-    const refreshUser = async () => {
-        try {
-            const profile = await authApi.getProfile();
-            const storedUser = localStorage.getItem('user');
-            const parsedUser = storedUser ? JSON.parse(storedUser) : null;
-            
-            if (parsedUser) {
-                const userData: AuthUser = {
-                    ...profile,
-                    access_token: parsedUser.access_token,
-                };
-                localStorage.setItem('user', JSON.stringify(userData));
-                setUser(userData);
-            }
-        } catch (error) {
-            console.error('Erreur lors de la mise à jour du profil:', error);
-            logout();
-        }
+    const addUser = (newUser: AdminUser) => {
+        const updatedUsers = [...users, newUser];
+        setUsers(updatedUsers);
+        localStorage.setItem('admin_users', JSON.stringify(updatedUsers));
+    };
+
+    const removeUser = (email: string) => {
+        const updatedUsers = users.filter(u => u.email !== email);
+        setUsers(updatedUsers);
+        localStorage.setItem('admin_users', JSON.stringify(updatedUsers));
     };
     
     if (loading) {
@@ -121,7 +102,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
 
     return (
-        <AuthContext.Provider value={{ user, loading, login, logout, refreshUser }}>
+        <AuthContext.Provider value={{ user, users, loading, login, logout, addUser, removeUser }}>
             {children}
         </AuthContext.Provider>
     );

@@ -5,19 +5,31 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useAuth } from "@/context/auth-context";
+import { useAuth, type AdminUser } from "@/context/auth-context";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
-import { UserPlus, Users } from "lucide-react";
+import { UserPlus, Users, Trash2, Trophy } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { useEvent } from "@/context/event-context";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
 
 function AddUserForm() {
+    const { addUser } = useAuth();
     const { toast } = useToast();
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
 
-    const handleSubmit = async (e: React.FormEvent) => {
+    const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         if(!email || !password) {
             toast({
@@ -27,12 +39,11 @@ function AddUserForm() {
             });
             return;
         }
-        // TODO: Implémenter la création d'admin via l'API backend
-        // Pour l'instant, cette fonctionnalité n'est pas disponible dans l'API
+        const newUser: AdminUser = { email, password, role: 'admin' };
+        addUser(newUser);
         toast({
-            variant: "destructive",
-            title: "Fonctionnalité non disponible",
-            description: "La création d'administrateurs via l'interface n'est pas encore implémentée. Utilisez la base de données directement.",
+            title: "Utilisateur ajouté",
+            description: `${email} a été ajouté en tant qu'administrateur.`,
         });
         setEmail('');
         setPassword('');
@@ -65,36 +76,61 @@ function AddUserForm() {
 }
 
 function UsersList() {
-    const { user: currentUser } = useAuth();
+    const { users, removeUser, user: currentUser } = useAuth();
     const { toast } = useToast();
 
-    // TODO: Implémenter la récupération de la liste des admins via l'API
-    // Pour l'instant, on affiche juste l'utilisateur actuel
+    const handleDelete = (email: string) => {
+        removeUser(email);
+        toast({
+            title: "Utilisateur supprimé",
+            description: `${email} a été supprimé de la liste des administrateurs.`,
+        });
+    }
+
     return (
         <Card>
             <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                     <Users />
-                    Administrateur actuel
+                    Liste des administrateurs
                 </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-                {currentUser && (
-                    <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
+                {users.map(user => (
+                    <div key={user.email} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
                         <div className="flex items-center gap-4">
                             <Avatar className="h-9 w-9">
-                                <AvatarFallback>{currentUser.email.substring(0, 2).toUpperCase()}</AvatarFallback>
+                                <AvatarFallback>{user.email.substring(0, 2).toUpperCase()}</AvatarFallback>
                             </Avatar>
                             <div>
-                                <p className="font-medium">{currentUser.email}</p>
+                                <p className="font-medium">{user.email}</p>
                                 <p className="text-xs text-muted-foreground">Admin</p>
                             </div>
                         </div>
+
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button variant="ghost" size="icon" disabled={user.email === currentUser?.email}>
+                                <Trash2 className="h-4 w-4"/>
+                                <span className="sr-only">Supprimer</span>
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Êtes-vous absolument sûr ?</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                Cette action ne peut pas être annulée. Cela supprimera définitivement
+                                l'administrateur <span className="font-bold">{user.email}</span>.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Annuler</AlertDialogCancel>
+                              <AlertDialogAction onClick={() => handleDelete(user.email)}>Supprimer</AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
                     </div>
-                )}
-                <p className="text-sm text-muted-foreground">
-                    La gestion de plusieurs administrateurs n'est pas encore disponible via l'interface.
-                </p>
+                ))}
             </CardContent>
         </Card>
     )
@@ -103,23 +139,29 @@ function UsersList() {
 export default function SettingsPage() {
     const { eventSettings, setEventSettings } = useEvent();
     const { toast } = useToast();
-    
-    // Local state to manage form inputs
-    const [eventName, setEventName] = useState(eventSettings.eventName);
-    const [eventDate, setEventDate] = useState(eventSettings.eventDate);
-    const [registrationsOpen, setRegistrationsOpen] = useState(eventSettings.registrationsOpen);
-    const [registrationGoal, setRegistrationGoal] = useState(eventSettings.registrationGoal);
 
+    const handleSettingChange = <K extends keyof typeof eventSettings>(key: K, value: (typeof eventSettings)[K]) => {
+        setEventSettings(prevSettings => ({
+            ...prevSettings,
+            [key]: value
+        }));
+    };
+
+    const handlePrizeChange = (prize: keyof typeof eventSettings.prizes, value: string) => {
+        setEventSettings(prevSettings => ({
+            ...prevSettings,
+            prizes: {
+                ...prevSettings.prizes,
+                [prize]: value
+            }
+        }));
+    };
+    
     const handleSaveChanges = () => {
-        setEventSettings({
-            eventName,
-            eventDate,
-            registrationsOpen,
-            registrationGoal,
-        });
+        // This function is now just for user feedback, as changes are saved live.
         toast({
-            title: "Paramètres enregistrés !",
-            description: "Les modifications ont été sauvegardées.",
+            title: "Modifications enregistrées !",
+            description: "Les paramètres sont sauvegardés au fur et à mesure.",
         });
     };
 
@@ -135,9 +177,10 @@ export default function SettingsPage() {
                     </div>
                     
                     <Tabs defaultValue="event">
-                        <TabsList className="grid w-full max-w-md grid-cols-4">
+                        <TabsList className="grid w-full max-w-lg grid-cols-2 sm:grid-cols-5">
                             <TabsTrigger value="general">Général</TabsTrigger>
                             <TabsTrigger value="event">Événement</TabsTrigger>
+                            <TabsTrigger value="prizes">Prix</TabsTrigger>
                             <TabsTrigger value="users">Utilisateurs</TabsTrigger>
                             <TabsTrigger value="appearance">Apparence</TabsTrigger>
                         </TabsList>
@@ -151,7 +194,7 @@ export default function SettingsPage() {
                                 <CardContent className="space-y-6">
                                     <div className="space-y-2">
                                         <Label htmlFor="appName">Nom de l'application</Label>
-                                        <Input id="appName" defaultValue="Hackathon 2026 | CFI-CIRAS" />
+                                        <Input id="appName" defaultValue="Hackathon CFI-CIRAS" />
                                     </div>
                                     <div className="flex items-center justify-between rounded-lg border p-4">
                                          <div className="space-y-0.5">
@@ -175,15 +218,15 @@ export default function SettingsPage() {
                                 <CardContent className="space-y-6">
                                    <div className="space-y-2">
                                         <Label htmlFor="eventName">Nom de l'événement</Label>
-                                        <Input id="eventName" value={eventName} onChange={(e) => setEventName(e.target.value)} />
+                                        <Input id="eventName" value={eventSettings.eventName} onChange={(e) => handleSettingChange('eventName', e.target.value)} />
                                     </div>
                                     <div className="space-y-2">
                                         <Label htmlFor="eventDate">Date de début</Label>
-                                        <Input id="eventDate" type="datetime-local" value={eventDate} onChange={(e) => setEventDate(e.target.value)} />
+                                        <Input id="eventDate" type="datetime-local" value={eventSettings.eventDate} onChange={(e) => handleSettingChange('eventDate', e.target.value)} />
                                     </div>
                                     <div className="space-y-2">
                                         <Label htmlFor="registrationGoal">Objectif d'inscriptions</Label>
-                                        <Input id="registrationGoal" type="number" value={registrationGoal} onChange={(e) => setRegistrationGoal(parseInt(e.target.value, 10))} />
+                                        <Input id="registrationGoal" type="number" value={eventSettings.registrationGoal} onChange={(e) => handleSettingChange('registrationGoal', parseInt(e.target.value, 10))} />
                                     </div>
                                      <div className="flex items-center justify-between rounded-lg border p-4">
                                          <div className="space-y-0.5">
@@ -192,7 +235,30 @@ export default function SettingsPage() {
                                               Permettre aux participants de s'inscrire via le formulaire.
                                             </p>
                                         </div>
-                                        <Switch checked={registrationsOpen} onCheckedChange={setRegistrationsOpen} />
+                                        <Switch checked={eventSettings.registrationsOpen} onCheckedChange={(checked) => handleSettingChange('registrationsOpen', checked)} />
+                                    </div>
+                                </CardContent>
+                            </Card>
+                        </TabsContent>
+
+                        <TabsContent value="prizes">
+                            <Card>
+                                <CardHeader>
+                                    <CardTitle>Prix du Hackathon</CardTitle>
+                                    <CardDescription>Modifiez les montants des récompenses pour les gagnants.</CardDescription>
+                                </CardHeader>
+                                <CardContent className="space-y-6">
+                                    <div className="space-y-2">
+                                        <Label htmlFor="firstPrize" className="flex items-center gap-2"><Trophy className="text-yellow-400"/> 1ère Place</Label>
+                                        <Input id="firstPrize" value={eventSettings.prizes.first} onChange={(e) => handlePrizeChange('first', e.target.value)} />
+                                    </div>
+                                     <div className="space-y-2">
+                                        <Label htmlFor="secondPrize" className="flex items-center gap-2"><Trophy className="text-slate-300"/> 2ème Place</Label>
+                                        <Input id="secondPrize" value={eventSettings.prizes.second} onChange={(e) => handlePrizeChange('second', e.target.value)} />
+                                    </div>
+                                     <div className="space-y-2">
+                                        <Label htmlFor="thirdPrize" className="flex items-center gap-2"><Trophy className="text-yellow-600"/> 3ème Place</Label>
+                                        <Input id="thirdPrize" value={eventSettings.prizes.third} onChange={(e) => handlePrizeChange('third', e.target.value)} />
                                     </div>
                                 </CardContent>
                             </Card>

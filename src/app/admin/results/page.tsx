@@ -71,21 +71,21 @@ export default function ResultsAdminPage() {
   const [thirdPlace, setThirdPlace] = useState(winners.third || 'none');
   const [selectedParticipants, setSelectedParticipants] = useState<string[]>(preselected);
 
-  const handlePublishWinners = async () => {
-    await setWinners({
+  const handlePublishWinners = () => {
+    setWinners({
       first: firstPlace,
       second: secondPlace,
       third: thirdPlace,
     });
-    await publishResults(true);
+    publishResults(true);
     toast({
       title: 'Résultats Publiés !',
       description: 'Les gagnants sont maintenant visibles sur la page des résultats.',
     });
   };
 
-  const handleUnpublishWinners = async () => {
-     await publishResults(false);
+  const handleUnpublishWinners = () => {
+     publishResults(false);
      toast({
       title: 'Résultats dépubliés',
       description: 'La page des gagnants est de nouveau masquée.',
@@ -93,17 +93,17 @@ export default function ResultsAdminPage() {
     });
   }
 
-  const handlePublishPreselections = async () => {
-    await setPreselected(selectedParticipants);
-    await publishPreselections(true);
+  const handlePublishPreselections = () => {
+    setPreselected(selectedParticipants);
+    publishPreselections(true);
     toast({
       title: 'Présélections Publiées !',
       description: 'La liste des présélectionnés est visible sur la page des résultats.',
     });
   };
 
-  const handleUnpublishPreselections = async () => {
-     await publishPreselections(false);
+  const handleUnpublishPreselections = () => {
+     publishPreselections(false);
      toast({
       title: 'Présélections dépubliées',
       description: 'La liste des présélectionnés est maintenant masquée.',
@@ -180,25 +180,21 @@ export default function ResultsAdminPage() {
           <CardContent>
             <ScrollArea className="h-72 w-full rounded-md border p-4">
               <div className="space-y-4">
-                {inscriptions.map((inscription, index) => {
-                  const email = inscription.user?.email || '';
-                  const fullName = inscription.user ? `${inscription.user.prenom} ${inscription.user.nom}` : 'Utilisateur inconnu';
-                  return (
-                    <div key={inscription.id || index} className="flex items-center space-x-2">
-                      <Checkbox
-                        id={`${inscription.id}-${index}`}
-                        checked={selectedParticipants.includes(email)}
-                        onCheckedChange={() => handleParticipantSelect(email)}
-                      />
-                      <label
-                        htmlFor={`${inscription.id}-${index}`}
-                        className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                      >
-                        {fullName} ({email})
-                      </label>
-                    </div>
-                  );
-                })}
+                {inscriptions.map((inscription, index) => (
+                  <div key={`${inscription.email}-${index}`} className="flex items-center space-x-2">
+                    <Checkbox
+                      id={`${inscription.email}-${index}`}
+                      checked={selectedParticipants.includes(inscription.email)}
+                      onCheckedChange={() => handleParticipantSelect(inscription.email)}
+                    />
+                    <label
+                      htmlFor={`${inscription.email}-${index}`}
+                      className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                    >
+                      {inscription.fullName} ({inscription.email})
+                    </label>
+                  </div>
+                ))}
               </div>
             </ScrollArea>
           </CardContent>

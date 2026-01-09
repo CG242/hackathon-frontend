@@ -37,8 +37,8 @@ export default function ProjectsPage() {
                                         Équipe
                                     </h4>
                                     <div className="flex items-center gap-2">
-                                        {project.team.map((member, index) => (
-                                            <Avatar key={`${project.name}-${member}-${index}`} className="h-8 w-8">
+                                        {project.team.map(member => (
+                                            <Avatar key={member} className="h-8 w-8">
                                                 <AvatarFallback>{member.substring(0, 2).toUpperCase()}</AvatarFallback>
                                             </Avatar>
                                         ))}

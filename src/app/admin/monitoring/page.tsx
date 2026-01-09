@@ -4,8 +4,6 @@ import { AreaChart, Area, XAxis, YAxis, Tooltip, CartesianGrid, ResponsiveContai
 import { ChartTooltipContent, ChartContainer, type ChartConfig } from "@/components/ui/chart";
 import { Badge } from "@/components/ui/badge";
 import { useEffect, useState } from "react";
-import { adminApi } from "@/lib/api";
-import { Loader2 } from "lucide-react";
 
 const chartConfig = {
   cpu: { label: "CPU", color: "hsl(var(--primary))" },
@@ -42,61 +40,19 @@ const generateLogs = () => {
 
 export default function MonitoringPage() {
     const [chartData, setChartData] = useState<ReturnType<typeof generateChartData>>([]);
-    const [logs, setLogs] = useState<any[]>([]);
-    const [loading, setLoading] = useState(true);
-    const [metrics, setMetrics] = useState<any>(null);
+    const [logs, setLogs] = useState<ReturnType<typeof generateLogs>>([]);
 
     useEffect(() => {
-        const loadMonitoringData = async () => {
-            try {
-                setLoading(true);
-                // Charger les métriques système
-                const metricsData = await adminApi.getMetrics();
-                setMetrics(metricsData);
-                
-                // Charger les logs IA
-                const logsData = await adminApi.getMonitoringLogs(1, 20);
-                // Le backend retourne { data: [...], meta: {...} }
-                setLogs(logsData?.data || logsData?.logs || []);
-                
-                // Générer les données de graphique (simulation pour CPU/Memory)
-                setChartData(generateChartData());
-            } catch (error: any) {
-                // Améliorer la gestion d'erreur pour afficher plus d'informations
-                const errorMessage = error?.message || error?.error || 'Erreur inconnue';
-                const errorDetails = error?.data || error?.response?.data || {};
-                const statusCode = error?.statusCode || error?.status || error?.response?.status;
-                
-                console.error('Erreur lors du chargement des données de monitoring:', {
-                    message: errorMessage,
-                    details: errorDetails,
-                    status: statusCode,
-                    fullError: error
-                });
-                
-                // Si c'est une erreur 401 ou 403, l'utilisateur n'est peut-être pas admin
-                if (statusCode === 401) {
-                    console.warn('⚠️ Non authentifié. Veuillez vous connecter.');
-                } else if (statusCode === 403) {
-                    console.warn('⚠️ Accès refusé. Vous devez être connecté en tant qu\'ADMIN pour accéder au monitoring.');
-                    console.warn('💡 Connectez-vous avec : admin@hackathon.com / admin123');
-                }
-                
-                // Fallback vers les données simulées en cas d'erreur
-                setChartData(generateChartData());
-                setLogs(generateLogs());
-            } finally {
-                setLoading(false);
-            }
-        };
+        setChartData(generateChartData());
+        setLogs(generateLogs());
 
-        loadMonitoringData();
-        
-        // Rafraîchir toutes les 30 secondes
         const interval = setInterval(() => {
-            loadMonitoringData();
-        }, 30000);
-        
+            setChartData(generateChartData());
+            setLogs(prevLogs => [
+                ...generateLogs().slice(0, 1), 
+                ...prevLogs
+            ].slice(0, 20));
+        }, 5000);
         return () => clearInterval(interval);
     }, [])
 
@@ -121,20 +77,20 @@ export default function MonitoringPage() {
                     </Card>
                     <Card>
                         <CardHeader className="pb-2">
-                            <CardTitle className="text-sm font-medium">Inscriptions/heure</CardTitle>
+                            <CardTitle className="text-sm font-medium">Latence API (ms)</CardTitle>
                         </CardHeader>
                         <CardContent>
-                            <div className="text-2xl font-bold">{loading ? '...' : (metrics?.inscriptions?.perHour || 0)}</div>
-                            <p className="text-xs text-muted-foreground">Dernière heure</p>
+                            <div className="text-2xl font-bold">45ms</div>
+                            <p className="text-xs text-muted-foreground">Moyenne sur la dernière heure</p>
                         </CardContent>
                     </Card>
                      <Card>
                         <CardHeader className="pb-2">
-                            <CardTitle className="text-sm font-medium">Inscriptions/jour</CardTitle>
+                            <CardTitle className="text-sm font-medium">Taux d'erreur</CardTitle>
                         </CardHeader>
                         <CardContent>
-                            <div className="text-2xl font-bold">{loading ? '...' : (metrics?.inscriptions?.perDay || 0)}</div>
-                            <p className="text-xs text-muted-foreground">Dernières 24h</p>
+                            <div className="text-2xl font-bold">0.12%</div>
+                            <p className="text-xs text-muted-foreground">Sur les 24 dernières heures</p>
                         </CardContent>
                     </Card>
                 </div>
@@ -175,29 +131,17 @@ export default function MonitoringPage() {
                 
                  <Card>
                     <CardHeader>
-                        <CardTitle>Logs IA en direct</CardTitle>
+                        <CardTitle>Logs en direct</CardTitle>
                     </CardHeader>
                     <CardContent>
                         <div className="bg-background/50 p-4 rounded-lg font-code text-xs h-64 overflow-y-auto">
-                            {loading ? (
-                                <div className="flex items-center justify-center h-full">
-                                    <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                            {logs.map((log, i) => (
+                                <div key={i} className="flex items-center">
+                                    <span className="text-muted-foreground mr-2">{log.timestamp}</span>
+                                    <Badge variant={log.level === 'ERROR' ? 'destructive' : log.level === 'WARN' ? 'secondary' : 'outline'} className="mr-2 w-14 justify-center">{log.level}</Badge>
+                                    <span>{log.message}</span>
                                 </div>
-                            ) : logs.length > 0 ? (
-                                logs.map((log: any, i: number) => (
-                                    <div key={log.id || i} className="flex items-center">
-                                        <span className="text-muted-foreground mr-2">
-                                            {new Date(log.createdAt).toLocaleTimeString()}
-                                        </span>
-                                        <Badge variant={log.type === 'SURVEILLANCE' ? 'destructive' : log.type === 'SUGGESTION' ? 'secondary' : 'outline'} className="mr-2 w-20 justify-center">
-                                            {log.type}
-                                        </Badge>
-                                        <span>{log.input?.userId ? `User ${log.input.userId}` : JSON.stringify(log.input || log)}</span>
-                                    </div>
-                                ))
-                            ) : (
-                                <p className="text-muted-foreground text-center py-8">Aucun log pour le moment</p>
-                            )}
+                            ))}
                         </div>
                     </CardContent>
                 </Card>

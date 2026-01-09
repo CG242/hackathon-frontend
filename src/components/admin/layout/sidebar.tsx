@@ -28,6 +28,8 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useAuth } from "@/context/auth-context";
 import { useInscriptions } from "@/context/inscriptions-context";
+import { useEvent } from "@/context/event-context";
+import { useEffect, useState } from "react";
 
 const bottomNavItems = [
     { href: "/admin/settings", label: "Configuration", icon: Settings },
@@ -38,6 +40,12 @@ export default function AdminSidebar() {
     const pathname = usePathname();
     const { logout } = useAuth();
     const { inscriptions } = useInscriptions();
+    const { eventSettings } = useEvent();
+    const [isClient, setIsClient] = useState(false);
+
+    useEffect(() => {
+        setIsClient(true);
+    }, []);
 
     const navItems = [
         { href: "/admin/dashboard", label: "Tableau de bord", icon: LayoutDashboard },
@@ -56,7 +64,7 @@ export default function AdminSidebar() {
             <SidebarHeader className="h-20 justify-center">
                 <Link href="/" className="flex items-center gap-2 text-xl font-bold font-headline group-data-[collapsible=icon]:hidden">
                     <CodeXml className="w-7 h-7 text-primary" />
-                    <span>CFI-CIRAS</span>
+                    <span>{isClient ? eventSettings.eventName.split(' ')[0] : 'CFI-CIRAS' }</span>
                 </Link>
                 <Link href="/" className="items-center gap-2 text-xl font-bold font-headline hidden group-data-[collapsible=icon]:flex">
                     <CodeXml className="w-7 h-7 text-primary" />

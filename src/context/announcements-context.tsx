@@ -1,75 +1,55 @@
 'use client';
 
-import React, { createContext, useContext, useState, ReactNode, useEffect } from 'react';
-import { annoncesApi, Annonce } from '@/lib/api';
-import { useAuth } from './auth-context';
+import React, { createContext, useContext, useState, ReactNode } from 'react';
+
+export type Announcement = {
+    id: number;
+    title: string;
+    content: string;
+    date: string;
+    scope: 'public' | 'private';
+}
 
 interface AnnouncementsContextType {
-    announcements: Annonce[];
-    publicAnnouncements: Annonce[];
-    loading: boolean;
-    refreshAnnouncements: () => Promise<void>;
-    createAnnouncement: (data: { titre: string; contenu: string; cible: 'PUBLIC' | 'INSCRITS'; hackathonId?: string }) => Promise<void>;
+    announcements: Announcement[];
+    addAnnouncement: (announcement: Announcement) => void;
 }
 
 const AnnouncementsContext = createContext<AnnouncementsContextType | undefined>(undefined);
 
+const initialAnnouncements: Announcement[] = [
+    {
+        id: 1,
+        title: "Bienvenue au Hackathon 2026!",
+        content: "Nous sommes ravis de vous accueillir. Que le meilleur gagne !",
+        date: "2026-01-01",
+        scope: "public",
+    },
+    {
+        id: 2,
+        title: "Rappel : Cérémonie d'ouverture",
+        content: "N'oubliez pas la cérémonie d'ouverture à 9h précises dans l'amphithéâtre principal.",
+        date: "2026-01-01",
+        scope: "public",
+    },
+    {
+        id: 3,
+        title: "Briefing des mentors (Privé)",
+        content: "Rendez-vous à 8h30 pour le briefing des mentors dans la salle 101.",
+        date: "2026-01-01",
+        scope: "private",
+    }
+];
+
 export const AnnouncementsProvider = ({ children }: { children: ReactNode }) => {
-    const [announcements, setAnnouncements] = useState<Annonce[]>([]);
-    const [publicAnnouncements, setPublicAnnouncements] = useState<Annonce[]>([]);
-    const [loading, setLoading] = useState(true);
-    const { user } = useAuth();
+    const [announcements, setAnnouncements] = useState<Announcement[]>(initialAnnouncements);
 
-    const refreshAnnouncements = async () => {
-        try {
-            setLoading(true);
-            // Toujours charger les annonces publiques
-            const publicData = await annoncesApi.getPublicAnnonces();
-            setPublicAnnouncements(publicData);
-
-            // Charger les annonces pour inscrits si l'utilisateur est connecté
-            if (user) {
-                try {
-                    const inscritsData = await annoncesApi.getAnnoncesInscrits();
-                    setAnnouncements(inscritsData);
-                } catch (error) {
-                    // Si l'utilisateur n'est pas inscrit, on garde seulement les publiques
-                    setAnnouncements([]);
-                }
-            } else {
-                setAnnouncements([]);
-            }
-        } catch (error) {
-            console.error('Erreur lors de la récupération des annonces:', error);
-            setAnnouncements([]);
-            setPublicAnnouncements([]);
-        } finally {
-            setLoading(false);
-        }
+    const addAnnouncement = (announcement: Announcement) => {
+        setAnnouncements(prevAnnouncements => [announcement, ...prevAnnouncements]);
     };
-
-    const createAnnouncement = async (data: { titre: string; contenu: string; cible: 'PUBLIC' | 'INSCRITS'; hackathonId?: string }) => {
-        try {
-            await annoncesApi.createAnnonce(data);
-            await refreshAnnouncements();
-        } catch (error) {
-            console.error('Erreur lors de la création de l\'annonce:', error);
-            throw error;
-        }
-    };
-
-    useEffect(() => {
-        refreshAnnouncements();
-    }, [user]);
 
     return (
-        <AnnouncementsContext.Provider value={{ 
-            announcements, 
-            publicAnnouncements, 
-            loading, 
-            refreshAnnouncements, 
-            createAnnouncement 
-        }}>
+        <AnnouncementsContext.Provider value={{ announcements, addAnnouncement }}>
             {children}
         </AnnouncementsContext.Provider>
     );

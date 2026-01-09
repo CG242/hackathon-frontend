@@ -18,7 +18,7 @@ import { useState, useEffect } from "react";
 import { useAnnouncements } from "@/context/announcements-context";
 
 export default function AdminHeader() {
-    const { logout } = useAuth();
+    const { logout, user } = useAuth();
     const { announcements } = useAnnouncements();
     const [isClient, setIsClient] = useState(false);
 
@@ -52,10 +52,16 @@ export default function AdminHeader() {
                     <DropdownMenuContent align="end">
                         <DropdownMenuLabel>Notifications</DropdownMenuLabel>
                         <DropdownMenuSeparator />
-                        {announcements.slice(0, 3).map(announcement => (
-                           <DropdownMenuItem key={announcement.id}>{announcement.title}</DropdownMenuItem>
+                        {announcements.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()).slice(0, 3).map(announcement => (
+                           <DropdownMenuItem key={announcement.id} asChild>
+                               <Link href="/admin/announcements" className="flex flex-col items-start">
+                                   <span className="font-semibold">{announcement.title}</span>
+                                   <span className="text-xs text-muted-foreground">{announcement.content.substring(0, 30)}...</span>
+                                </Link>
+                            </DropdownMenuItem>
                         ))}
                          {announcements.length === 0 && <DropdownMenuItem>Aucune nouvelle notification</DropdownMenuItem>}
+                         {announcements.length > 3 && <DropdownMenuItem asChild><Link href="/admin/announcements" className="text-primary text-center w-full justify-center">Voir toutes</Link></DropdownMenuItem>}
                     </DropdownMenuContent>
                 </DropdownMenu>
 
@@ -67,7 +73,7 @@ export default function AdminHeader() {
                         </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
-                        <DropdownMenuLabel>Mon Compte</DropdownMenuLabel>
+                        <DropdownMenuLabel>{user?.email}</DropdownMenuLabel>
                         <DropdownMenuSeparator />
                         <DropdownMenuItem asChild>
                             <Link href="/admin/settings">Paramètres</Link>

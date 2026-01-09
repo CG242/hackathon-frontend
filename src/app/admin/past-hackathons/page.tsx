@@ -1,34 +1,32 @@
-'use client';
-
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { hackathonApi } from "@/lib/api";
-import { useEffect, useState } from "react";
-import { Loader2 } from "lucide-react";
+
+const pastEditions = [
+    {
+        year: "2025",
+        theme: "IA & Santé",
+        winner: "Projet Med-Bot",
+        participants: 180,
+        projects: 45,
+    },
+    {
+        year: "2024",
+        theme: "Fintech Durable",
+        winner: "Eco-Pay",
+        participants: 150,
+        projects: 38,
+    },
+    {
+        year: "2023",
+        theme: "Smart City",
+        winner: "City-Flow",
+        participants: 120,
+        projects: 30,
+    }
+]
 
 export default function PastHackathonsPage() {
-    const [pastHackathons, setPastHackathons] = useState<any[]>([]);
-    const [loading, setLoading] = useState(true);
-
-    useEffect(() => {
-        const loadPastHackathons = async () => {
-            try {
-                setLoading(true);
-                const data = await hackathonApi.getPastHackathons(1, 10);
-                // La réponse peut être { data: [], total, page, limit } ou directement un tableau
-                const hackathons = data.data || data;
-                setPastHackathons(Array.isArray(hackathons) ? hackathons : []);
-            } catch (error) {
-                console.error('Erreur lors du chargement des hackathons passés:', error);
-                setPastHackathons([]);
-            } finally {
-                setLoading(false);
-            }
-        };
-
-        loadPastHackathons();
-    }, []);
     return (
         <div className="flex flex-col h-full bg-background">
             <main className="flex-1 p-4 md:p-8 space-y-8">
@@ -38,45 +36,29 @@ export default function PastHackathonsPage() {
                         Archive et résultats des éditions précédentes du hackathon.
                     </p>
                 </div>
-                {loading ? (
-                    <div className="flex items-center justify-center py-16">
-                        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                    </div>
-                ) : pastHackathons.length > 0 ? (
-                    <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
-                        {pastHackathons.map((hackathon) => {
-                            const year = new Date(hackathon.dateDebut || hackathon.dateFin).getFullYear();
-                            return (
-                                <Card key={hackathon.id}>
-                                    <CardHeader>
-                                        <div className="flex justify-between items-center">
-                                            <CardTitle className="font-headline text-2xl">{hackathon.nom}</CardTitle>
-                                            <Badge variant="outline">{year}</Badge>
-                                        </div>
-                                    </CardHeader>
-                                    <CardContent className="space-y-4">
-                                        <div>
-                                            <p className="text-sm text-muted-foreground">Description</p>
-                                            <p className="font-semibold text-sm">{hackathon.description || 'Pas de description'}</p>
-                                        </div>
-                                        <div className="flex justify-between text-sm">
-                                            <p className="text-muted-foreground">{hackathon.nombreInscriptions || 0} Inscriptions</p>
-                                            <p className="text-muted-foreground">Status: {hackathon.status}</p>
-                                        </div>
-                                        <div className="text-xs text-muted-foreground">
-                                            <p>Du {new Date(hackathon.dateDebut).toLocaleDateString()} au {new Date(hackathon.dateFin).toLocaleDateString()}</p>
-                                        </div>
-                                        <Button variant="secondary" className="w-full">Voir les détails</Button>
-                                    </CardContent>
-                                </Card>
-                            );
-                        })}
-                    </div>
-                ) : (
-                    <div className="text-center py-16 text-muted-foreground">
-                        <p>Aucun hackathon passé pour le moment.</p>
-                    </div>
-                )}
+                <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
+                    {pastEditions.map((edition) => (
+                        <Card key={edition.year}>
+                            <CardHeader>
+                                <div className="flex justify-between items-center">
+                                    <CardTitle className="font-headline text-2xl">Hackathon {edition.year}</CardTitle>
+                                    <Badge variant="outline">{edition.theme}</Badge>
+                                </div>
+                            </CardHeader>
+                            <CardContent className="space-y-4">
+                                <div>
+                                    <p className="text-sm text-muted-foreground">Vainqueur</p>
+                                    <p className="font-semibold">{edition.winner}</p>
+                                </div>
+                                <div className="flex justify-between text-sm">
+                                    <p className="text-muted-foreground">{edition.participants} Participants</p>
+                                    <p className="text-muted-foreground">{edition.projects} Projets</p>
+                                </div>
+                                <Button variant="secondary" className="w-full">Voir les détails</Button>
+                            </CardContent>
+                        </Card>
+                    ))}
+                </div>
             </main>
         </div>
     );
