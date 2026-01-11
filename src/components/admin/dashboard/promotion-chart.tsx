@@ -4,32 +4,30 @@ import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/com
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from "recharts";
 import { ChartTooltipContent, ChartContainer, type ChartConfig } from "@/components/ui/chart";
 import { useMemo, useState, useEffect } from "react";
-import { type Inscription } from "@/components/registration-form";
+import { type Inscription } from "@/lib/api";
 
 const chartConfig = {
-    lic1: { label: "LIC1", color: "hsl(var(--chart-1))" },
-    lic2: { label: "LIC2", color: "hsl(var(--chart-2))" },
-    lrt: { label: "LRT", color: "hsl(var(--chart-3))" },
-    lrt2: { label: "LRT 2", color: "hsl(var(--chart-4))" },
-    other: { label: "Other", color: "hsl(var(--chart-5))" },
+    l1: { label: "L1", color: "hsl(var(--chart-1))" },
+    l2: { label: "L2", color: "hsl(var(--chart-2))" },
+    other: { label: "Non renseignée", color: "hsl(var(--chart-3))" },
 } satisfies ChartConfig
 
-const groupInscriptionsByClasse = (inscriptions: Inscription[]) => {
+const groupInscriptionsByPromo = (inscriptions: Inscription[]) => {
     const groups: Record<keyof typeof chartConfig, number> = {
-        lic1: 0,
-        lic2: 0,
-        lrt: 0,
-        lrt2: 0,
+        l1: 0,
+        l2: 0,
         other: 0,
     };
 
     inscriptions.forEach(inscription => {
-        const classe = inscription.classe.toLowerCase().replace(/ /g, '');
-        if (classe.includes('lic1')) groups.lic1++;
-        else if (classe.includes('lic2')) groups.lic2++;
-        else if (classe.includes('lrt2')) groups.lrt2++;
-        else if (classe.includes('lrt')) groups.lrt++;
-        else groups.other++;
+        const promo = inscription.promo?.toUpperCase();
+        if (promo === 'L1') {
+            groups.l1++;
+        } else if (promo === 'L2') {
+            groups.l2++;
+        } else {
+            groups.other++;
+        }
     });
 
     return Object.keys(chartConfig).map(name => ({
@@ -41,7 +39,7 @@ const groupInscriptionsByClasse = (inscriptions: Inscription[]) => {
 
 export default function PromotionChart({ inscriptions }: { inscriptions: Inscription[] }) {
     const [isClient, setIsClient] = useState(false);
-    const data = useMemo(() => groupInscriptionsByClasse(inscriptions), [inscriptions]);
+    const data = useMemo(() => groupInscriptionsByPromo(inscriptions), [inscriptions]);
     const totalParticipants = inscriptions.length;
     
     useEffect(() => {

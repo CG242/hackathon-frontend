@@ -1,8 +1,4 @@
-/**
- * Service API pour communiquer avec le backend NestJS
- */
-
-import { API_BASE_URL, getAuthHeaders } from './api-config';
+import { getApiBaseUrl, getAuthHeaders, getAuthToken } from './api-config';
 
 export interface LoginDto {
   email: string;
@@ -25,6 +21,8 @@ export interface User {
   nom: string;
   prenom: string;
   role: 'USER' | 'ADMIN';
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface LoginResponse {
@@ -35,42 +33,26 @@ export interface LoginResponse {
 export interface Hackathon {
   id: string;
   nom: string;
-  description: string;
+  description?: string;
   dateDebut: Date | string;
   dateFin: Date | string;
-  dateLimiteInscription: Date | string;
+  dateLimiteInscription?: Date | string;
   status: 'UPCOMING' | 'ONGOING' | 'PAST';
-  nombreInscriptions?: number;
-  countdown?: {
-    days: number;
-    hours: number;
-    minutes: number;
-    seconds: number;
-  };
+  registrationGoal?: number;
+  currentRegistrations?: number;
+  inscriptionOuverte?: boolean;
 }
 
 export interface Inscription {
   id: string;
-  userId: string;
-  hackathonId: string;
-  promo?: string;
-  technologies?: any;
-  statut: 'VALIDE' | 'EN_ATTENTE' | 'REFUSE';
+  statut: 'EN_ATTENTE' | 'VALIDE' | 'REFUSE';
+  promo?: string | null;
   createdAt: Date | string;
-  user?: {
-    id: string;
-    email: string;
-    nom: string;
-    prenom: string;
+  technologies?: {
+    classe?: string;
   };
-  hackathon?: {
-    id: string;
-    nom: string;
-    description?: string;
-    dateDebut?: Date | string;
-    dateFin?: Date | string;
-    status?: string;
-  };
+  user?: User;
+  hackathonId: string;
 }
 
 export interface Annonce {
@@ -78,466 +60,285 @@ export interface Annonce {
   titre: string;
   contenu: string;
   cible: 'PUBLIC' | 'INSCRITS';
-  sentAt?: Date | string;
   hackathonId?: string;
-  createdAt: Date | string;
-  updatedAt: Date | string;
-  hackathon?: {
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ResultatsResponse {
+  hackathonId: string | null;
+  podiumPublie: boolean;
+  preselectionsPubliees: boolean;
+  premierPlace?: string | null;
+  deuxiemePlace?: string | null;
+  troisiemePlace?: string | null;
+  preselectionnes: string[];
+  documentPreselectionsName?: string | null;
+  documentPreselectionsUrl?: string | null;
+  hasPreselectionsDocument?: boolean;
+}
+
+export interface TeamMember {
+  id: string;
+  teamId: string;
+  userId: string;
+  role?: string;
+  user: {
     id: string;
+    email: string;
     nom: string;
+    prenom: string;
   };
 }
 
-export interface DashboardStats {
-  hackathon?: {
-    id: string;
-    nom: string;
-    status: string;
-  };
-  totalInscrits: number; // Le backend retourne "totalInscrits" pas "totalInscriptions"
-  inscriptionsAujourdhui?: number; // Optionnel, peut ne pas être retourné
-  parPromo: Array<{ promo: string; count: number }>; // Le backend retourne un array
-  parTechnologie: Array<{ technologie: string; count: number }>; // Le backend retourne un array
-  inscriptionsParJour?: Array<{ date: string; count: number }>; // Optionnel
-  message?: string; // Message optionnel si aucun hackathon actif
+export interface Team {
+  id: string;
+  nom: string;
+  description?: string;
+  projetNom?: string;
+  hackathonId: string;
+  createdAt: string;
+  updatedAt: string;
+  members: TeamMember[];
 }
 
-export interface ApiError {
-  message: string;
-  statusCode: number;
-}
-
-/**
- * Gestion des erreurs API
- */
-const handleApiError = async (response: Response): Promise<never> => {
-  let errorMessage = 'Une erreur est survenue';
-  let errorData: any = {};
-  
+const handleApiError = async (response: Response) => {
+  let message = `${response.status} - ${response.statusText || 'Erreur'}`;
   try {
-    const contentType = response.headers.get('content-type');
-    if (contentType && contentType.includes('application/json')) {
-      errorData = await response.json();
-      errorMessage = errorData.message || errorData.error || errorData.error?.message || errorMessage;
-    } else {
-      const text = await response.text();
-      errorMessage = text || response.statusText || errorMessage;
+    const data = await response.json();
+    if (data?.message) message = `${response.status} - ${data.message}`;
+    else if (Array.isArray(data?.errors) && data.errors.length > 0) {
+      message = data.errors.map((err: any) => err.message || err).join(', ');
     }
-  } catch (parseError) {
-    errorMessage = response.statusText || 'Erreur lors de la lecture de la réponse';
+  } catch {
+    // ignore parse errors
   }
-  
-  const error: ApiError & { data?: any } = {
-    message: errorMessage,
-    statusCode: response.status,
-    data: errorData,
-  };
-  
-  // Ajouter les détails de l'erreur pour faciliter le débogage
-  (error as any).response = response;
-  (error as any).status = response.status;
-  
-  throw error;
+  throw new Error(message);
 };
 
-/**
- * Effectue une requête API
- */
-const apiRequest = async <T>(
-  endpoint: string,
-  options: RequestInit = {}
-): Promise<T> => {
-  const url = `${API_BASE_URL}${endpoint}`;
+const apiRequest = async <T>(endpoint: string, options: RequestInit = {}): Promise<T> => {
+  const url = `${getApiBaseUrl()}${endpoint}`;
   const headers = getAuthHeaders();
-  
-  try {
-    const response = await fetch(url, {
-      ...options,
-      headers: {
-        ...headers,
-        ...options.headers,
-      },
-    });
 
-    if (!response.ok) {
-      await handleApiError(response);
-    }
+  const requestOptions: RequestInit = {
+    ...options,
+    headers: {
+      ...headers,
+      ...options.headers,
+      ...(options.body ? { 'Content-Type': 'application/json' } : {}),
+    },
+  };
 
-    return response.json();
-  } catch (error: any) {
-    // Améliorer la gestion des erreurs réseau
-    if (error.name === 'TypeError' && error.message.includes('fetch')) {
-      throw new Error('Impossible de se connecter au serveur. Vérifiez que le backend est démarré.');
-    }
-    throw error;
+  const response = await fetch(url, requestOptions);
+  if (!response.ok) {
+    await handleApiError(response);
   }
+
+  if (response.status === 204) {
+    return undefined as unknown as T;
+  }
+
+  return response.json();
 };
 
-/**
- * API d'authentification
- */
+const fetchWithToken = async (url: string, options: RequestInit = {}) => {
+  const token = getAuthToken();
+  const headers: HeadersInit = {
+    ...options.headers,
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+  };
+  const response = await fetch(url, { ...options, headers });
+  if (!response.ok) await handleApiError(response);
+  return response;
+};
+
 export const authApi = {
-  /**
-   * Connexion
-   */
-  login: async (credentials: LoginDto): Promise<LoginResponse> => {
-    return apiRequest<LoginResponse>('/auth/login', {
+  login: (credentials: LoginDto) =>
+    apiRequest<LoginResponse>('/auth/login', {
       method: 'POST',
       body: JSON.stringify(credentials),
-    });
-  },
-
-  /**
-   * Inscription (register crée aussi l'inscription au hackathon)
-   */
-  register: async (data: RegisterDto) => {
-    return apiRequest('/auth/register', {
+    }),
+  register: (payload: RegisterDto) =>
+    apiRequest<LoginResponse>('/auth/register', {
       method: 'POST',
-      body: JSON.stringify(data),
-    });
-  },
-
-  /**
-   * Récupérer le profil utilisateur
-   */
-  getProfile: async (): Promise<User> => {
-    return apiRequest<User>('/auth/profile');
-  },
-
-  /**
-   * Mettre à jour le profil
-   */
-  updateProfile: async (data: { nom?: string; prenom?: string }): Promise<User> => {
-    return apiRequest<User>('/auth/profile', {
+      body: JSON.stringify(payload),
+    }),
+  getProfile: () => apiRequest<User>('/auth/profile'),
+  updateProfile: (data: { nom?: string; prenom?: string }) =>
+    apiRequest<User>('/auth/profile', {
       method: 'PUT',
       body: JSON.stringify(data),
-    });
-  },
-
-  /**
-   * Changer le mot de passe
-   */
-  changePassword: async (data: { currentPassword: string; newPassword: string }) => {
-    return apiRequest('/auth/change-password', {
+    }),
+  changePassword: (data: { currentPassword: string; newPassword: string }) =>
+    apiRequest('/auth/change-password', {
       method: 'POST',
       body: JSON.stringify(data),
-    });
-  },
+    }),
 };
 
-/**
- * API des hackathons
- */
 export const hackathonApi = {
-  /**
-   * Récupérer le hackathon public actuel/à venir
-   */
-  getPublicHackathon: async (): Promise<Hackathon> => {
-    return apiRequest<Hackathon>('/hackathons/public');
-  },
-
-  /**
-   * Récupérer tous les hackathons disponibles pour inscription
-   */
-  getAvailableHackathons: async (): Promise<Hackathon[]> => {
-    return apiRequest<Hackathon[]>('/hackathons/available');
-  },
-
-  /**
-   * Récupérer les hackathons passés
-   */
-  getPastHackathons: async (page = 1, limit = 10, year?: number) => {
-    const params = new URLSearchParams({
-      page: page.toString(),
-      limit: limit.toString(),
-    });
-    if (year) params.append('year', year.toString());
-    
-    return apiRequest(`/hackathons/past?${params}`);
-  },
-
-  /**
-   * Récupérer un hackathon par ID
-   */
-  getHackathonById: async (id: string): Promise<Hackathon> => {
-    return apiRequest<Hackathon>(`/hackathons/${id}`);
-  },
-
-  /**
-   * Créer un hackathon (Admin)
-   */
-  createHackathon: async (data: any): Promise<Hackathon> => {
-    return apiRequest<Hackathon>('/hackathons', {
-      method: 'POST',
-      body: JSON.stringify(data),
-    });
-  },
-
-  /**
-   * Modifier un hackathon (Admin)
-   */
-  updateHackathon: async (id: string, data: any): Promise<Hackathon> => {
-    return apiRequest<Hackathon>(`/hackathons/${id}`, {
+  // Le backend expose les hackathons sous le préfixe /hackathons
+  getPublicHackathon: () => apiRequest<Hackathon>('/hackathons/public'),
+  getAllHackathons: () => apiRequest<Hackathon[]>('/hackathons'),
+  updateHackathon: (id: string, data: Partial<Hackathon>) =>
+    apiRequest<Hackathon>(`/hackathons/${id}`, {
       method: 'PUT',
       body: JSON.stringify(data),
-    });
-  },
-
-  /**
-   * Supprimer un hackathon (Admin)
-   */
-  deleteHackathon: async (id: string) => {
-    return apiRequest(`/hackathons/${id}`, {
-      method: 'DELETE',
-    });
-  },
+    }),
 };
 
-/**
- * API des inscriptions
- */
-export const inscriptionsApi = {
-  /**
-   * Récupérer mes inscriptions
-   */
-  getMyInscriptions: async (): Promise<Inscription[]> => {
-    return apiRequest<Inscription[]>('/inscriptions/mes-inscriptions');
-  },
-
-  /**
-   * Récupérer une inscription par ID
-   */
-  getInscriptionById: async (id: string): Promise<Inscription> => {
-    return apiRequest<Inscription>(`/inscriptions/${id}`);
-  },
-
-  /**
-   * Supprimer une inscription
-   */
-  deleteInscription: async (id: string) => {
-    return apiRequest(`/inscriptions/${id}`, {
-      method: 'DELETE',
-    });
-  },
-};
-
-/**
- * API des annonces
- */
-export const annoncesApi = {
-  /**
-   * Récupérer les annonces publiques
-   */
-  getPublicAnnonces: async (): Promise<Annonce[]> => {
-    return apiRequest<Annonce[]>('/annonces/public');
-  },
-
-  /**
-   * Récupérer les annonces pour inscrits
-   */
-  getAnnoncesInscrits: async (): Promise<Annonce[]> => {
-    return apiRequest<Annonce[]>('/annonces/inscrits');
-  },
-
-  /**
-   * Récupérer une annonce par ID
-   */
-  getAnnonceById: async (id: string): Promise<Annonce> => {
-    return apiRequest<Annonce>(`/annonces/${id}`);
-  },
-
-  /**
-   * Créer une annonce (Admin)
-   */
-  createAnnonce: async (data: {
-    titre: string;
-    contenu: string;
-    cible: 'PUBLIC' | 'INSCRITS';
-    hackathonId?: string;
-  }): Promise<Annonce> => {
-    return apiRequest<Annonce>('/admin/annonces', {
-      method: 'POST',
-      body: JSON.stringify(data),
-    });
-  },
-
-  /**
-   * Modifier une annonce (Admin)
-   */
-  updateAnnonce: async (id: string, data: {
-    titre?: string;
-    contenu?: string;
-    cible?: 'PUBLIC' | 'INSCRITS';
-    hackathonId?: string;
-  }): Promise<Annonce> => {
-    return apiRequest<Annonce>(`/annonces/admin/annonces/${id}`, {
-      method: 'PUT',
-      body: JSON.stringify(data),
-    });
-  },
-
-  /**
-   * Supprimer une annonce (Admin)
-   */
-  deleteAnnonce: async (id: string) => {
-    return apiRequest(`/annonces/admin/annonces/${id}`, {
-      method: 'DELETE',
-    });
-  },
-};
-
-/**
- * API administrateur
- */
 export const adminApi = {
-  /**
-   * Récupérer les statistiques du dashboard
-   */
-  getDashboard: async (): Promise<DashboardStats> => {
-    return apiRequest<DashboardStats>('/admin/dashboard');
-  },
-
-  /**
-   * Récupérer toutes les inscriptions (Admin uniquement)
-   */
-  getAllInscriptions: async (): Promise<Inscription[]> => {
-    return apiRequest<Inscription[]>('/admin/inscriptions');
-  },
-
-  /**
-   * Récupérer les métriques système
-   */
-  getMetrics: async () => {
-    return apiRequest('/admin/monitoring/metrics');
-  },
-
-  /**
-   * Récupérer les logs IA
-   */
-  getMonitoringLogs: async (page = 1, limit = 50, type?: string) => {
-    const params = new URLSearchParams({
-      page: page.toString(),
-      limit: limit.toString(),
-    });
-    if (type) params.append('type', type);
-    
-    return apiRequest(`/admin/monitoring/logs?${params}`);
-  },
-
-  /**
-   * Modifier une inscription (Admin uniquement)
-   */
-  updateInscription: async (id: string, data: { statut?: string; promo?: string; technologies?: any }): Promise<Inscription> => {
-    return apiRequest<Inscription>(`/admin/inscriptions/${id}`, {
+  getAllInscriptions: () => apiRequest<Inscription[]>('/admin/inscriptions'),
+  updateInscription: (id: string, data: Partial<Inscription>) =>
+    apiRequest(`/admin/inscriptions/${id}`, {
       method: 'PUT',
       body: JSON.stringify(data),
-    });
-  },
-
-  /**
-   * Supprimer une inscription (Admin uniquement)
-   */
-  deleteInscription: async (id: string) => {
-    return apiRequest(`/admin/inscriptions/${id}`, {
+    }),
+  deleteInscription: (id: string) =>
+    apiRequest(`/admin/inscriptions/${id}`, {
       method: 'DELETE',
-    });
-  },
-
-  /**
-   * Récupérer tous les utilisateurs (Admin uniquement)
-   */
-  getAllUsers: async (): Promise<User[]> => {
-    return apiRequest<User[]>('/admin/users');
-  },
-
-  /**
-   * Modifier un utilisateur (Admin uniquement)
-   */
-  updateUser: async (id: string, data: { nom?: string; prenom?: string; email?: string; role?: string }): Promise<User> => {
-    return apiRequest<User>(`/admin/users/${id}`, {
+    }),
+  getAllUsers: () => apiRequest<User[]>('/admin/users'),
+  updateUser: (id: string, data: { nom?: string; prenom?: string; email?: string }) =>
+    apiRequest<User>(`/admin/users/${id}`, {
       method: 'PUT',
       body: JSON.stringify(data),
-    });
-  },
-
-  /**
-   * Supprimer un utilisateur (Admin uniquement)
-   */
-  deleteUser: async (id: string) => {
-    return apiRequest(`/admin/users/${id}`, {
+    }),
+  deleteUser: (id: string) =>
+    apiRequest(`/admin/users/${id}`, {
       method: 'DELETE',
-    });
-  },
+    }),
 };
 
-/**
- * API des résultats
- */
-export const resultatsApi = {
-  /**
-   * Récupérer les résultats publics du hackathon actuel
-   */
-  getPublicResultats: async () => {
-    return apiRequest('/resultats/public');
-  },
+export const inscriptionsApi = {
+  getMyInscriptions: () => apiRequest<Inscription[]>('/inscriptions/mes-inscriptions'),
+  getAllInscriptions: () => apiRequest<Inscription[]>('/admin/inscriptions'),
+  updateInscription: (id: string, data: Partial<Inscription>) =>
+    apiRequest(`/admin/inscriptions/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    }),
+  deleteInscription: (id: string) =>
+    apiRequest(`/admin/inscriptions/${id}`, {
+      method: 'DELETE',
+    }),
+};
 
-  /**
-   * Récupérer les résultats d'un hackathon (Admin uniquement)
-   */
-  getResultats: async (hackathonId: string) => {
-    return apiRequest(`/resultats/hackathon/${hackathonId}`);
-  },
-
-  /**
-   * Publier le podium (Admin uniquement)
-   */
-  publishPodium: async (hackathonId: string, data: { premierPlace?: string; deuxiemePlace?: string; troisiemePlace?: string }) => {
-    return apiRequest(`/resultats/hackathon/${hackathonId}/podium`, {
+export const annoncesApi = {
+  getPublicAnnonces: () => apiRequest<Annonce[]>('/annonces/public'),
+  getAnnoncesInscrits: () => apiRequest<Annonce[]>('/annonces/inscrits'),
+  getAllAnnonces: () => apiRequest<Annonce[]>('/annonces/admin/all'),
+  createAnnonce: (data: { titre: string; contenu: string; cible: 'PUBLIC' | 'INSCRITS'; hackathonId?: string }) =>
+    apiRequest<Annonce>('/annonces/admin/annonces', {
       method: 'POST',
       body: JSON.stringify(data),
-    });
-  },
+    }),
+  updateAnnonce: (id: string, data: Partial<Annonce>) =>
+    apiRequest<Annonce>(`/annonces/admin/annonces/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    }),
+  deleteAnnonce: (id: string) =>
+    apiRequest(`/annonces/admin/annonces/${id}`, {
+      method: 'DELETE',
+    }),
+};
 
-  /**
-   * Publier les présélections (Admin uniquement)
-   */
-  publishPreselections: async (hackathonId: string, preselectionnes: string[]) => {
-    return apiRequest(`/resultats/hackathon/${hackathonId}/preselections`, {
+export const resultatsApi = {
+  getPublicResultats: async (): Promise<ResultatsResponse> => {
+    const response = await fetch(`${getApiBaseUrl()}/resultats/public`, {
+      method: 'GET',
+      headers: { 'Content-Type': 'application/json' },
+    });
+    if (!response.ok) await handleApiError(response);
+    const data = await response.json();
+    const documentUrl =
+      data.hasPreselectionsDocument && data.hackathonId
+        ? `${getApiBaseUrl()}/resultats/hackathon/${data.hackathonId}/preselections/document`
+        : null;
+    return {
+      ...data,
+      documentPreselectionsName: data.documentPreselectionsName || null,
+      documentPreselectionsUrl: documentUrl,
+    };
+  },
+  getResultats: (hackathonId: string) => apiRequest(`/resultats/hackathon/${hackathonId}`),
+  publishPodium: (hackathonId: string, data: { premierPlace?: string; deuxiemePlace?: string; troisiemePlace?: string }) =>
+    apiRequest(`/resultats/hackathon/${hackathonId}/podium`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+  publishPreselections: (hackathonId: string, preselectionnes: string[]) =>
+    apiRequest(`/resultats/hackathon/${hackathonId}/preselections`, {
       method: 'POST',
       body: JSON.stringify({ preselectionnes }),
-    });
-  },
-
-  /**
-   * Dépublier le podium (Admin uniquement)
-   */
-  unpublishPodium: async (hackathonId: string) => {
-    return apiRequest(`/resultats/hackathon/${hackathonId}/podium`, {
-      method: 'DELETE',
-    });
-  },
-
-  /**
-   * Dépublier les présélections (Admin uniquement)
-   */
-  unpublishPreselections: async (hackathonId: string) => {
-    return apiRequest(`/resultats/hackathon/${hackathonId}/preselections`, {
-      method: 'DELETE',
-    });
-  },
-};
-
-/**
- * API IA
- */
-export const aiApi = {
-  /**
-   * Analyser une inscription utilisateur (Admin)
-   */
-  analyzeInscription: async (userId: string) => {
-    return apiRequest(`/ai/analyze-inscription/${userId}`, {
+    }),
+  unpublishPodium: (hackathonId: string) =>
+    apiRequest(`/resultats/hackathon/${hackathonId}/podium`, { method: 'DELETE' }),
+  unpublishPreselections: (hackathonId: string) =>
+    apiRequest(`/resultats/hackathon/${hackathonId}/preselections`, { method: 'DELETE' }),
+  uploadPreselectionsDocument: async (hackathonId: string, file: File) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    const response = await fetch(`${getApiBaseUrl()}/resultats/hackathon/${hackathonId}/preselections/document`, {
       method: 'POST',
+      headers: {
+        ...(getAuthToken() ? { Authorization: `Bearer ${getAuthToken()}` } : {}),
+      },
+      body: formData,
     });
+    if (!response.ok) await handleApiError(response);
+    return response.json();
+  },
+  downloadPreselectionsDocument: (hackathonId: string) =>
+    fetchWithToken(`${getApiBaseUrl()}/resultats/hackathon/${hackathonId}/preselections/document`).then((res) => res.blob()),
+  deletePreselectionsDocument: (hackathonId: string) =>
+    apiRequest(`/resultats/hackathon/${hackathonId}/preselections/document`, { method: 'DELETE' }),
+  generateInscriptionsListPdf: async (hackathonId: string) => {
+    const response = await fetch(`${getApiBaseUrl()}/resultats/hackathon/${hackathonId}/inscriptions/liste-pdf`, {
+      method: 'GET',
+      headers: {
+        ...(getAuthToken() ? { Authorization: `Bearer ${getAuthToken()}` } : {}),
+      },
+    });
+    if (!response.ok) await handleApiError(response);
+    return response.blob();
   },
 };
 
+export const teamsApi = {
+  getPublicTeams: () => apiRequest<Team[]>('/teams/public'),
+  getTeamsByHackathon: (hackathonId: string) => apiRequest<Team[]>(`/teams/hackathon/${hackathonId}`),
+  getTeamById: (teamId: string) => apiRequest<Team>(`/teams/${teamId}`),
+  createTeam: (hackathonId: string, data: { nom: string; description?: string; projetNom?: string }) =>
+    apiRequest<Team>(`/teams/hackathon/${hackathonId}`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+  updateTeam: (teamId: string, data: { nom?: string; description?: string; projetNom?: string }) =>
+    apiRequest<Team>(`/teams/${teamId}`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    }),
+  deleteTeam: (teamId: string) =>
+    apiRequest<void>(`/teams/${teamId}`, {
+      method: 'DELETE',
+    }),
+  addMemberToTeam: (teamId: string, userId: string, role?: string) =>
+    apiRequest(`/teams/${teamId}/members`, {
+      method: 'POST',
+      body: JSON.stringify({ userId, role }),
+    }),
+  removeMemberFromTeam: (teamId: string, userId: string) =>
+    apiRequest(`/teams/${teamId}/members/${userId}`, {
+      method: 'DELETE',
+    }),
+};
+
+export const aiApi = {
+  analyzeInscription: (userId: string) =>
+    apiRequest(`/ai/analyze-inscription/${userId}`, {
+      method: 'POST',
+    }),
+};
+ 

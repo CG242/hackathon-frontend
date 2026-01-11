@@ -37,7 +37,24 @@ const Header = () => {
           </Link>
           <nav className="hidden md:flex items-center space-x-6">
             {navLinks.map((link) => (
-               <Link key={link.href} href={link.href} className="text-sm font-medium text-foreground/80 hover:text-primary transition-colors">
+               <Link
+                 key={link.href}
+                 href={link.href}
+                 className="text-sm font-medium text-foreground/80 hover:text-primary transition-colors"
+                 onClick={(e) => {
+                   if (link.href.startsWith('/#')) {
+                     e.preventDefault();
+                     const targetId = link.href.replace('/#', '');
+                     const targetElement = document.getElementById(targetId);
+                     if (targetElement) {
+                       targetElement.scrollIntoView({
+                         behavior: 'smooth',
+                         block: 'start'
+                       });
+                     }
+                   }
+                 }}
+               >
                 {link.label}
               </Link>
             ))}
@@ -70,7 +87,27 @@ const Header = () => {
                   </div>
                   <nav className="flex flex-col items-center space-y-6 mt-10 text-lg">
                     {navLinks.map((link) => (
-                       <Link key={link.href} href={link.href} className="font-medium text-foreground/80 hover:text-primary transition-colors" onClick={() => setIsMenuOpen(false)}>
+                       <Link
+                         key={link.href}
+                         href={link.href}
+                         className="font-medium text-foreground/80 hover:text-primary transition-colors"
+                         onClick={(e) => {
+                           setIsMenuOpen(false);
+                           if (link.href.startsWith('/#')) {
+                             e.preventDefault();
+                             const targetId = link.href.replace('/#', '');
+                             setTimeout(() => {
+                               const targetElement = document.getElementById(targetId);
+                               if (targetElement) {
+                                 targetElement.scrollIntoView({
+                                   behavior: 'smooth',
+                                   block: 'start'
+                                 });
+                               }
+                             }, 300); // Délai pour fermer le menu
+                           }
+                         }}
+                       >
                         {link.label}
                       </Link>
                     ))}

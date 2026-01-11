@@ -44,6 +44,11 @@ const HeroSection = () => {
         </div>
         <div className="mt-16 animate-fade-in-up animation-delay-900">
           <Countdown />
+          <div className="mt-4">
+            <Link href="/login" className="text-xs text-muted-foreground hover:text-primary transition-colors">
+              Administration
+            </Link>
+          </div>
         </div>
       </div>
       <div className="absolute bottom-5 left-1/2 -translate-x-1/2">

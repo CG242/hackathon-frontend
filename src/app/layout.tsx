@@ -8,6 +8,7 @@ import { EventProvider } from '@/context/event-context';
 import { AnnouncementsProvider } from '@/context/announcements-context';
 import { ProjectsProvider } from '@/context/projects-context';
 import { WinnersProvider } from '@/context/winners-context';
+import { TeamsProvider } from '@/context/teams-context';
 
 export const metadata: Metadata = {
   title: 'Hackathon CFI-CIRAS',
@@ -35,7 +36,9 @@ export default function RootLayout({
               <AnnouncementsProvider>
                 <ProjectsProvider>
                   <WinnersProvider>
-                    {children}
+                    <TeamsProvider>
+                      {children}
+                    </TeamsProvider>
                   </WinnersProvider>
                 </ProjectsProvider>
               </AnnouncementsProvider>

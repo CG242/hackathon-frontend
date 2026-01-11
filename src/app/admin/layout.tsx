@@ -20,7 +20,7 @@ export default function AdminLayout({
 
   useEffect(() => {
     if (!loading) {
-      if (!user) {
+      if (!user || user.role !== 'ADMIN') {
         router.replace('/login');
       } else {
         setIsChecking(false);

@@ -17,7 +17,6 @@ const Footer = () => {
                 <li><Link href="/#about" className="text-sm text-muted-foreground hover:text-primary transition-colors">À Propos</Link></li>
                 <li><Link href="/#prizes" className="text-sm text-muted-foreground hover:text-primary transition-colors">Prix</Link></li>
                 <li><Link href="/#announcements" className="text-sm text-muted-foreground hover:text-primary transition-colors">Annonces</Link></li>
-                <li><Link href="/admin/dashboard" className="text-sm text-muted-foreground hover:text-primary transition-colors">Admin</Link></li>
               </ul>
             </div>
             <div>

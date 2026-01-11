@@ -12,34 +12,42 @@ import { useToast } from '@/hooks/use-toast';
 import AdminBackground from '@/components/admin/layout/admin-background';
 
 export default function LoginPage() {
-    const [email, setEmail] = useState('cfi-ciras@example.com');
-    const [password, setPassword] = useState('password');
+    const [email, setEmail] = useState('');
+    const [password, setPassword] = useState('');
     const [isLoading, setIsLoading] = useState(false);
-    const { login } = useAuth();
+    const { login, logout } = useAuth();
     const router = useRouter();
     const { toast } = useToast();
 
-    const handleLogin = (e: React.FormEvent) => {
+    const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault();
         setIsLoading(true);
 
-        // Simulate API call
-        setTimeout(() => {
-            if (login(email, password)) {
-                toast({
-                    title: 'Connexion réussie!',
-                    description: 'Bienvenue sur le tableau de bord.',
-                });
-                router.push('/admin/dashboard');
-            } else {
+        try {
+            const user = await login(email, password);
+            if (user.role !== 'ADMIN') {
+                logout();
                 toast({
                     variant: 'destructive',
-                    title: 'Erreur de connexion',
-                    description: 'Email ou mot de passe incorrect.',
+                    title: 'Accès refusé',
+                    description: 'Ce compte n’a pas le rôle ADMIN.',
                 });
-                setIsLoading(false);
+                return;
             }
-        }, 1000);
+            toast({
+                title: 'Connexion réussie!',
+                description: 'Bienvenue sur le tableau de bord.',
+            });
+            router.push('/admin/dashboard');
+        } catch (error: any) {
+            toast({
+                variant: 'destructive',
+                title: 'Erreur de connexion',
+                description: error?.message || 'Impossible de se connecter au serveur. Vérifiez que le backend est démarré.',
+            });
+        } finally {
+            setIsLoading(false);
+        }
     };
 
     return (
@@ -61,7 +69,7 @@ export default function LoginPage() {
                             <Input
                                 id="email"
                                 type="email"
-                                placeholder="cfi-ciras@example.com"
+                                placeholder="admin@hackathon.com"
                                 value={email}
                                 onChange={(e) => setEmail(e.target.value)}
                                 required

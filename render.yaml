@@ -1,0 +1,13 @@
+services:
+  - type: web
+    name: hackathon-frontend
+    runtime: node
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: NEXT_PUBLIC_API_URL
+        value: https://hackathon-backend.onrender.com
+      - key: NEXT_PUBLIC_APP_URL
+        value: https://hackathon-frontend.onrender.com

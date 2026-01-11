@@ -1,117 +1,81 @@
 'use client';
 
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { useRouter } from 'next/navigation';
+import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { Loader2 } from 'lucide-react';
-
-type User = {
-    email: string;
-    role: 'admin';
-};
-
-export type AdminUser = User & { password?: string };
+import { useRouter } from 'next/navigation';
+import { authApi, type User as ApiUser } from '@/lib/api';
 
 interface AuthContextType {
-    user: User | null;
-    users: AdminUser[];
-    loading: boolean;
-    login: (email: string, pass: string) => boolean;
-    logout: () => void;
-    addUser: (user: AdminUser) => void;
-    removeUser: (email: string) => void;
+  user: ApiUser | null;
+  loading: boolean;
+  login: (email: string, password: string) => Promise<ApiUser>;
+  logout: () => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-const initialUsers: AdminUser[] = [
-    { email: 'cfi-ciras@example.com', password: 'password', role: 'admin' },
-];
-
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
-    const [user, setUser] = useState<User | null>(null);
-    const [users, setUsers] = useState<AdminUser[]>([]);
-    const [loading, setLoading] = useState(true);
-    const router = useRouter();
+  const [user, setUser] = useState<ApiUser | null>(null);
+  const [loading, setLoading] = useState(true);
+  const router = useRouter();
 
-    useEffect(() => {
-        try {
-            const storedUser = localStorage.getItem('user');
-            if (storedUser) {
-                setUser(JSON.parse(storedUser));
-            }
-            
-            const storedUsers = localStorage.getItem('admin_users');
-            if (storedUsers) {
-                const parsedUsers = JSON.parse(storedUsers);
-                 // Ensure initial user exists if storage is manipulated or empty
-                if (!parsedUsers.some((u: AdminUser) => u.email === initialUsers[0].email)) {
-                    const updatedUsers = [...parsedUsers, ...initialUsers];
-                    localStorage.setItem('admin_users', JSON.stringify(updatedUsers));
-                    setUsers(updatedUsers);
-                } else {
-                    setUsers(parsedUsers);
-                }
-            } else {
-                localStorage.setItem('admin_users', JSON.stringify(initialUsers));
-                setUsers(initialUsers);
-            }
-        } catch (error) {
-            // Silently fail if localStorage is not available or parsing fails
-            localStorage.setItem('admin_users', JSON.stringify(initialUsers));
-            setUsers(initialUsers);
-            localStorage.removeItem('user');
+  useEffect(() => {
+    try {
+      const storedUser = localStorage.getItem('user');
+      if (storedUser) {
+        const parsed = JSON.parse(storedUser);
+        // Format attendu: { access_token: string, user: {...} }
+        if (parsed?.user) {
+          setUser(parsed.user as ApiUser);
+        } else {
+          // Ancien format (front-only). On nettoie.
+          localStorage.removeItem('user');
+          setUser(null);
         }
-        setLoading(false);
-    }, []);
-
-    const login = (email: string, pass: string): boolean => {
-        const foundUser = users.find(u => u.email === email && u.password === pass);
-        if (foundUser) {
-            const userData: User = { email: foundUser.email, role: 'admin' };
-            localStorage.setItem('user', JSON.stringify(userData));
-            setUser(userData);
-            return true;
-        }
-        return false;
-    };
-
-    const logout = () => {
-        localStorage.removeItem('user');
-        setUser(null);
-        router.push('/login');
-    };
-
-    const addUser = (newUser: AdminUser) => {
-        const updatedUsers = [...users, newUser];
-        setUsers(updatedUsers);
-        localStorage.setItem('admin_users', JSON.stringify(updatedUsers));
-    };
-
-    const removeUser = (email: string) => {
-        const updatedUsers = users.filter(u => u.email !== email);
-        setUsers(updatedUsers);
-        localStorage.setItem('admin_users', JSON.stringify(updatedUsers));
-    };
-    
-    if (loading) {
-        return (
-            <div className="flex h-screen w-full items-center justify-center bg-background">
-                <Loader2 className="h-8 w-8 animate-spin text-primary" />
-            </div>
-        );
+      }
+      // Nettoyage de l'ancien mode auth front-only
+      localStorage.removeItem('admin_users');
+    } catch (error) {
+      localStorage.removeItem('user');
+      localStorage.removeItem('admin_users');
+      setUser(null);
+    } finally {
+      setLoading(false);
     }
+  }, []);
 
+  const login = async (email: string, password: string) => {
+    const result = await authApi.login({ email, password });
+    localStorage.setItem('user', JSON.stringify(result));
+    setUser(result.user);
+    return result.user;
+  };
+
+  const logout = () => {
+    localStorage.removeItem('user');
+    localStorage.removeItem('admin_users');
+    setUser(null);
+    router.push('/login');
+  };
+
+  if (loading) {
     return (
-        <AuthContext.Provider value={{ user, users, loading, login, logout, addUser, removeUser }}>
-            {children}
-        </AuthContext.Provider>
+      <div className="flex h-screen items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
     );
+  }
+
+  return (
+    <AuthContext.Provider value={{ user, loading, login, logout }}>
+      {children}
+    </AuthContext.Provider>
+  );
 };
 
 export const useAuth = () => {
-    const context = useContext(AuthContext);
-    if (context === undefined) {
-        throw new Error('useAuth must be used within an AuthProvider');
-    }
-    return context;
+  const context = useContext(AuthContext);
+  if (!context) throw new Error('useAuth must be used within an AuthProvider');
+  return context;
 };
+

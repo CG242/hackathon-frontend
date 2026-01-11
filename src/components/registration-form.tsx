@@ -25,12 +25,15 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter }
 import { useToast } from "@/hooks/use-toast";
 import { Loader2 } from "lucide-react";
 import { useState } from "react";
-import { useInscriptions } from "@/context/inscriptions-context";
-import type { Inscription } from "@/context/inscriptions-context";
+import { authApi } from "@/lib/api";
+import { useEvent } from "@/context/event-context";
 
 const formSchema = z.object({
-  fullName: z.string().min(2, {
-    message: "Le nom complet doit comporter au moins 2 caractères.",
+  nom: z.string().min(2, {
+    message: "Le nom doit comporter au moins 2 caractères.",
+  }),
+  prenom: z.string().min(2, {
+    message: "Le prénom doit comporter au moins 2 caractères.",
   }),
   email: z.string().email({
     message: "Veuillez saisir une adresse e-mail valide.",
@@ -44,30 +47,54 @@ const formSchema = z.object({
 export default function RegistrationForm() {
     const [isLoading, setIsLoading] = useState(false);
     const { toast } = useToast();
-    const { addInscription } = useInscriptions();
-    
+    const { hackathon } = useEvent();
+
     const form = useForm<z.infer<typeof formSchema>>({
         resolver: zodResolver(formSchema),
         defaultValues: {
-            fullName: "CFI-CIRAS",
-            email: "cfi-ciras@example.com",
+            nom: "",
+            prenom: "",
+            email: "",
+            classe: undefined,
         },
     });
 
-    function onSubmit(values: z.infer<typeof formSchema>) {
+    async function onSubmit(values: z.infer<typeof formSchema>) {
+        if (!hackathon?.id) {
+          toast({
+            variant: "destructive",
+            title: "Erreur",
+            description: "Aucun hackathon actif pour l'inscription.",
+          });
+          return;
+        }
         setIsLoading(true);
-        
-        // Simulate API call
-        setTimeout(() => {
-            addInscription(values);
-            
-            setIsLoading(false);
-            toast({
-                title: "Inscription réussie ! 🎉",
-                description: "Nous avons bien reçu votre inscription. Consultez votre e-mail pour plus de détails.",
-            });
-            form.reset({fullName: "CFI-CIRAS", email: "cfi-ciras@example.com", classe: undefined});
-        }, 1000);
+        try {
+          await authApi.register({
+            email: values.email,
+            password: `${values.email}-motdepasse`,
+            nom: values.nom,
+            prenom: values.prenom,
+            // Promo laissée vide, mais on stocke la classe choisie dans technologies (tableau de strings)
+            promo: undefined,
+            technologies: [values.classe],
+            hackathonId: hackathon.id,
+          });
+
+          toast({
+            title: "Inscription réussie ! 🎉",
+            description: "Nous avons bien reçu votre inscription. Un e-mail de confirmation vous a été envoyé.",
+          });
+          form.reset({ nom: "", prenom: "", email: "", classe: undefined });
+        } catch (error: any) {
+          toast({
+            variant: "destructive",
+            title: "Erreur",
+            description: error?.message || "Impossible de finaliser l'inscription.",
+          });
+        } finally {
+          setIsLoading(false);
+        }
     }
 
   return (
@@ -79,19 +106,34 @@ export default function RegistrationForm() {
         <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)}>
                 <CardContent className="space-y-6">
-                    <FormField
-                        control={form.control}
-                        name="fullName"
-                        render={({ field }) => (
-                            <FormItem>
-                            <FormLabel>Nom complet</FormLabel>
-                            <FormControl>
-                                <Input placeholder="CFI-CIRAS" {...field} />
-                            </FormControl>
-                            <FormMessage />
-                            </FormItem>
-                        )}
-                    />
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <FormField
+                          control={form.control}
+                          name="prenom"
+                          render={({ field }) => (
+                              <FormItem>
+                              <FormLabel>Prénom</FormLabel>
+                              <FormControl>
+                                  <Input placeholder="Prénom" {...field} />
+                              </FormControl>
+                              <FormMessage />
+                              </FormItem>
+                          )}
+                      />
+                      <FormField
+                          control={form.control}
+                          name="nom"
+                          render={({ field }) => (
+                              <FormItem>
+                              <FormLabel>Nom</FormLabel>
+                              <FormControl>
+                                  <Input placeholder="Nom" {...field} />
+                              </FormControl>
+                              <FormMessage />
+                              </FormItem>
+                          )}
+                      />
+                    </div>
                     <FormField
                         control={form.control}
                         name="email"
@@ -99,7 +141,7 @@ export default function RegistrationForm() {
                             <FormItem>
                             <FormLabel>Email</FormLabel>
                             <FormControl>
-                                <Input type="email" placeholder="cfi-ciras@example.com" {...field} />
+                                <Input type="email" placeholder="prenom.nom@example.com" {...field} />
                             </FormControl>
                             <FormMessage />
                             </FormItem>

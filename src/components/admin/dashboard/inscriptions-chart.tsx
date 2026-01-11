@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { AreaChart, Area, XAxis, YAxis, Tooltip, CartesianGrid, ResponsiveContainer } from "recharts";
 import { ChartTooltipContent, ChartContainer, type ChartConfig } from "@/components/ui/chart";
 import { useEffect, useState, useMemo } from "react";
-import { type Inscription } from "@/components/registration-form";
+import type { Inscription } from "@/lib/api";
 
 const chartConfig = {
   cumulees: {
@@ -38,7 +38,10 @@ const generateDataForLastNDays = (inscriptions: Inscription[], days: number) => 
 
     let cumulativeTotal = 0;
     inscriptions.forEach(inscription => {
-        const inscriptionDate = new Date(inscription.date).toISOString().split('T')[0];
+        const rawDate = (inscription as any)?.createdAt ?? (inscription as any)?.date;
+        const parsed = new Date(rawDate);
+        if (Number.isNaN(parsed.getTime())) return;
+        const inscriptionDate = parsed.toISOString().split('T')[0];
         const dayData = data.find(d => d.fullDate === inscriptionDate);
         if (dayData) {
             dayData.parJour += 1;
