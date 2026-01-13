@@ -35,7 +35,7 @@ import { getApiBaseUrl, getAuthHeaders } from "@/lib/api-config";
 
 
 export default function InscriptionsPage() {
-    const { inscriptions, updateInscription, loading } = useInscriptions();
+    const { inscriptions, updateInscription, loading, refreshInscriptions } = useInscriptions();
     const { toast } = useToast();
     const { hackathon } = useEvent();
     const [isSheetOpen, setIsSheetOpen] = useState(false);
@@ -120,9 +120,9 @@ export default function InscriptionsPage() {
 
 
     const handleDeleteConfirm = async () => {
-        if (!inscriptionToDelete || !hackathon?.id) return;
+        if (!inscriptionToDelete) return;
 
-        const url = `${getApiBaseUrl()}/inscriptions/admin/user/${inscriptionToDelete.userId}/hackathon/${hackathon.id}`;
+        const url = `${getApiBaseUrl()}/inscriptions/${inscriptionToDelete.id}`;
         const headers = getAuthHeaders();
 
         try {
@@ -138,16 +138,13 @@ export default function InscriptionsPage() {
             // Créer un message détaillé basé sur la réponse du backend
             let description = `${getFullName(inscriptionToDelete)} a été retiré du hackathon.`;
 
-            // Note: Le backend retourne maintenant des détails complets
-            // On garde le message simple pour l'instant, mais on pourrait l'enrichir
-
             toast({
                 title: "Utilisateur supprimé avec succès",
                 description: description,
             });
 
             // Recharger les inscriptions
-            window.location.reload();
+            await refreshInscriptions();
         } catch (error: any) {
             toast({
                 variant: "destructive",
@@ -273,7 +270,7 @@ export default function InscriptionsPage() {
                                     ) : (
                                         <TableRow>
                                             <TableCell colSpan={7} className="text-center text-muted-foreground h-24">
-                                                {searchQuery ? "Aucun résultat pour cette recherche." : "Aucune inscription pour le moment."}
+                                                Aucune inscription pour le moment.
                                             </TableCell>
                                         </TableRow>
                                     )}

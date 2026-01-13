@@ -8,7 +8,7 @@ import { useEvent } from "@/context/event-context";
 import { useEffect, useState } from "react";
 
 const HeroSection = () => {
-  const { eventSettings } = useEvent();
+  const { eventSettings, hackathon } = useEvent();
   const [year, setYear] = useState(new Date().getFullYear());
   const [isClient, setIsClient] = useState(false);
 
@@ -17,10 +17,10 @@ const HeroSection = () => {
   }, []);
 
   useEffect(() => {
-    if (isClient && eventSettings.eventDate) {
-        setYear(new Date(eventSettings.eventDate).getFullYear());
+    if (isClient && hackathon?.dateDebut) {
+        setYear(new Date(hackathon.dateDebut).getFullYear());
     }
-  }, [isClient, eventSettings.eventDate]);
+  }, [isClient, hackathon?.dateDebut]);
 
   return (
     <section id="hero" className="relative flex items-center justify-center min-h-screen overflow-hidden pt-20">

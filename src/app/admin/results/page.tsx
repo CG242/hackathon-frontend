@@ -391,7 +391,6 @@ export default function ResultsAdminPage() {
                 onClick={() => !selectedFile && document.getElementById('pdf-upload')?.click()}
               >
                 {selectedFile ? (
-                  /* Fichier sélectionné */
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
                       <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
@@ -433,7 +432,6 @@ export default function ResultsAdminPage() {
                     </div>
                   </div>
                 ) : (
-                  /* Zone de drop vide */
                   <div className="text-center">
                     <div className="w-12 h-12 bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
                       <Upload className="h-6 w-6 text-muted-foreground" />

@@ -113,7 +113,7 @@ export default function ResultsPage() {
       return {
         name: team.projetNom || team.nom,
         description: team.description || 'Projet gagnant du hackathon',
-        team: team.members.map(m => `${m.user.prenom} ${m.user.nom}`),
+        team: team.members ? team.members.map(m => `${m.user.prenom} ${m.user.nom}`) : [],
         tags: []
       };
     }

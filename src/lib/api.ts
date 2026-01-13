@@ -188,6 +188,12 @@ export const hackathonApi = {
 };
 
 export const adminApi = {
+  getProfile: () => apiRequest<User>('/admin/profile'),
+  updateProfile: (data: { nom?: string; prenom?: string; email?: string; currentPassword?: string; newPassword?: string }) =>
+    apiRequest<User>('/admin/profile', {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    }),
   getAllInscriptions: () => apiRequest<Inscription[]>('/admin/inscriptions'),
   updateInscription: (id: string, data: Partial<Inscription>) =>
     apiRequest(`/admin/inscriptions/${id}`, {
@@ -225,7 +231,7 @@ export const inscriptionsApi = {
 };
 
 export const annoncesApi = {
-  getPublicAnnonces: () => apiRequest<Annonce[]>('/annonces/public'),
+  getPublicAnnonces: () => apiRequest<Annonce[]>('/annonces'),
   getAnnoncesInscrits: () => apiRequest<Annonce[]>('/annonces/inscrits'),
   getAllAnnonces: () => apiRequest<Annonce[]>('/annonces/admin/all'),
   createAnnonce: (data: { titre: string; contenu: string; cible: 'PUBLIC' | 'INSCRITS'; hackathonId?: string }) =>

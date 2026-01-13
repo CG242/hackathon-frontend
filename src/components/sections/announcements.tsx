@@ -1,7 +1,8 @@
  "use client";
 import React from "react";
 import { useAnnouncements } from "@/context/announcements-context";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 
 const AnnouncementsSection: React.FC = () => {

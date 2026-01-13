@@ -172,8 +172,8 @@ export default function ProjectsPage() {
         .filter(user => {
             if (!user.id || !user.email) return false;
             // Vérifier si l'utilisateur est déjà membre d'une autre équipe
-            const isMemberOfAnyTeam = teams.some(team => 
-                team.members.some(member => member.userId === user.id)
+            const isMemberOfAnyTeam = teams.some(team =>
+                team.members && team.members.some(member => member.userId === user.id)
             );
             return !isMemberOfAnyTeam;
         });
@@ -258,7 +258,7 @@ export default function ProjectsPage() {
                     </Card>
                 ) : (
                 <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-                        {teams.map((team) => (
+                        {teams && teams.map((team) => (
                             <Card key={team.id}>
                             <CardHeader>
                                     <div className="flex items-start justify-between">
@@ -296,10 +296,10 @@ export default function ProjectsPage() {
                                         <div className="flex items-center gap-2">
                                         <Users className="w-4 h-4" />
                                             <span className="text-sm font-semibold">
-                                                {team.members.length} membre{team.members.length > 1 ? 's' : ''}
+                                                {(team.members?.length || 0)} membre{(team.members?.length || 0) > 1 ? 's' : ''}
                                             </span>
                                     </div>
-                                        {team.members.length === 0 && (
+                                        {(team.members?.length || 0) === 0 && (
                                             <p className="text-sm text-muted-foreground">Aucun membre dans cette équipe</p>
                                         )}
                                         <Button
@@ -310,7 +310,7 @@ export default function ProjectsPage() {
                                             <UserPlus className="h-4 w-4 mr-2" />
                                             Ajouter un membre
                                         </Button>
-                                        {team.members.length > 0 && (
+                                        {team.members && team.members.length > 0 && (
                                             <Button
                                                 variant="outline"
                                                 className="w-full"

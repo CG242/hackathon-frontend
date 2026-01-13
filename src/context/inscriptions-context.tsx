@@ -24,7 +24,7 @@ const InscriptionsContext = createContext<InscriptionsContextType | undefined>(u
 export const InscriptionsProvider = ({ children }: { children: ReactNode }) => {
     const [inscriptions, setInscriptions] = useState<Inscription[]>([]);
     const [loading, setLoading] = useState(true);
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const { toast } = useToast();
 
   const isAdmin = (user?.role ?? '').toUpperCase() === 'ADMIN';
@@ -54,13 +54,15 @@ export const InscriptionsProvider = ({ children }: { children: ReactNode }) => {
   };
 
   useEffect(() => {
-    if (user) {
-      loadInscriptions();
-    } else {
-      setInscriptions([]);
-      setLoading(false);
+    if (!authLoading) {
+      if (user) {
+        loadInscriptions();
+      } else {
+        setInscriptions([]);
+        setLoading(false);
+      }
     }
-  }, [user]);
+  }, [user, authLoading]);
 
   const refreshInscriptions = async () => {
     await loadInscriptions();

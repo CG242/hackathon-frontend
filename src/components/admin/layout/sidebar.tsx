@@ -23,6 +23,7 @@ import {
     LogOut,
     CodeXml,
     Award,
+    User,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -32,6 +33,7 @@ import { useEvent } from "@/context/event-context";
 import { useEffect, useState } from "react";
 
 const bottomNavItems = [
+    { href: "/admin/profile", label: "Mon Profil", icon: User },
     { href: "/admin/settings", label: "Configuration", icon: Settings },
     { href: "/admin/docs", label: "Documentation", icon: BookText },
 ];

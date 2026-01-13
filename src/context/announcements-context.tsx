@@ -20,7 +20,7 @@ export const AnnouncementsProvider = ({ children }: { children: ReactNode }) => 
   const [announcements, setAnnouncements] = useState<Annonce[]>([]);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
 
   const load = async () => {
     setLoading(true);
@@ -50,8 +50,15 @@ export const AnnouncementsProvider = ({ children }: { children: ReactNode }) => 
   };
 
   useEffect(() => {
-    load();
-  }, []);
+    if (!authLoading) {
+      if (user) {
+        load();
+      } else {
+        setLoading(false);
+        setAnnouncements([]);
+      }
+    }
+  }, [user, authLoading]);
 
   const refreshAnnouncements = async () => {
     await load();
